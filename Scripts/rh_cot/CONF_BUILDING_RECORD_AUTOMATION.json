@@ -1,0 +1,30 @@
+{
+  "Building/Commercial/Alteration/*": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "Solo Exercise",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "task": [
+            "Accepted - Plan Review Req"
+          ]
+        },
+        "action": {
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeCode": "BLDGCOMALT04",
+              "feeQuantity": 1,
+              "feeInvoice": "Y",
+              "feePeriod": "Final"
+            }
+          ]
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
