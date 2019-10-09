@@ -8,7 +8,7 @@
         },
         "preScript": "",
         "criteria": {
-          "task": [
+          "workflow": [
             "Application Intake"
           ],
           "status": [
