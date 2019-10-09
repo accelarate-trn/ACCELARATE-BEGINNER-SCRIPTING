@@ -1,0 +1,22 @@
+{
+  "Building/*/*/*": {
+    "WorkflowTaskUpdateBefore": [
+      {
+        "metadata": {
+          "description": "test records",
+          "operators": {}
+        },
+        "preScript": " ",
+        "criteria": {
+          "validateLP": false,
+          "Task": "Permit Issuance",
+          "Status": "Issued"
+        },
+        "action": {
+          "validationMessage": "Only allowed when there is no balance Saher"
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
