@@ -6,7 +6,7 @@
           "description": "This is a description!",
           "operators": {}
         },
-        "preScript": "",
+        "preScript": " ",
         "criteria": {
           "allowBalance": true,
           "task": "Permit Issuance",
