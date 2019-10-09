@@ -1,6 +1,6 @@
 if (wfTask == "Permit Issuance" && wfStatus == "Issued" && balanceDue > 0
 ) {
-	showDebug = true;
+	showMessage = true;
 	comment("Cannot Issue Permit until balance is paid.");
 	 cancel = true;
 }
