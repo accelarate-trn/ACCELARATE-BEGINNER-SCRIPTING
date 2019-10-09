@@ -1,0 +1,22 @@
+{
+  "Building/*/*/*": {
+    "WorkflowTaskUpdateBefore": [
+      {
+        "metadata": {
+          "description": "Group Exercise 2",
+          "operators": {}
+        },
+        "preScript": " ",
+        "criteria": {
+          "allowBalance": false,
+          "Task": "Permit Issuance",
+          "Status": "Issued"
+        },
+        "action": {
+          "validationMessage": "This action cannot be completed with a balance Due"
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
