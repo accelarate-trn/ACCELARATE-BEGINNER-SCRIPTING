@@ -1,0 +1,37 @@
+{
+  "Building/Commercial/Alteration/NA": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "test records",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "customFields": {
+            "Gross Annual Sales": "12"
+          },
+          "task": [
+            "Application Intake"
+          ],
+          "status": [
+            "Accepted - Plan Review Req"
+          ]
+        },
+        "action": {
+          "addComment": "Another SN Test",
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeCode": "BLDGCOMALT04",
+              "feeQuantity": 1,
+              "feeInvoice": "Y",
+              "feePeriod": "FINAL"
+            }
+          ]
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
