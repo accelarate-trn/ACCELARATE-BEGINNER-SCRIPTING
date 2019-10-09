@@ -1,6 +1,6 @@
 {
   "Building/*/*/*": {
-    "WorkflowUpdateBefore": [
+    "WorkflowTaskUpdateBefore": [
       {
         "metadata": {
           "description": "This is a description!",
