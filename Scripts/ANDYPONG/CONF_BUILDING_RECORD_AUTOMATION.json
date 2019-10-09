@@ -12,13 +12,12 @@
           "status": "Accepted - Plan Review Req"
         },
         "action": {
-		  "invoiceFees": true,
           "assessFees": [
             {
               "feeSchedule": "BLDG_COM_ALT",
               "feeCode": "BLDGCOMALT04",
               "feeQuantity": 1,
-              "feeInvoice": true,
+              "feeInvoice": "Y",
               "feePeriod": "FINAL"
             }
           ]
