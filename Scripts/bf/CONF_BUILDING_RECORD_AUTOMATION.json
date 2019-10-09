@@ -1,0 +1,32 @@
+{
+  "Building/Commercial/Alteration/NA": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "Individual Exercise 1",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "task": [
+            "Application Intake"
+          ],
+          "status": [
+            "Accepted - Plan Review Req"
+          ]
+        },
+        "action": {
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeItem": "BLDGCOMALT04",
+              "feeQuantity": 1,
+              "feeInvoice": "Y",
+              "feePeriod": "Final"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
