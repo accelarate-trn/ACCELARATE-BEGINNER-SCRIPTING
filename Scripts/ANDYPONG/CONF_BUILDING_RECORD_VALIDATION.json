@@ -8,7 +8,7 @@
         },
         "preScript": " ",
         "criteria": {
-          "allowBalance": "false",
+          "allowBalance": false,
           "task": "Permit Issuance",
           "status": "Issued"
         },
