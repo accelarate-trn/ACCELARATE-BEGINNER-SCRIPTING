@@ -1,0 +1,23 @@
+{
+  "Building/*/*/*": {
+    "WorkflowTaskUpdateBefore": [
+      {
+        "metadata": {
+          "description": "Stupid Me",
+          "operators": {}
+        },
+        "preScript": " ",
+        "criteria": {
+          "allowBalance": false,
+          "chkInvoicedFees": true,
+          "task": "Permit Issuance",
+          "status": "Issued"
+        },
+        "action": {
+          "validationMessage": "Pay up SUCKA!!!"
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
