@@ -1,0 +1,82 @@
+{
+  "Building/Commercial/Alteration/NA": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "Individual Exercise 1",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "customFields": {
+            "Gross Annual Sales": "12"
+          },
+          "task": [
+            "Application Intake"
+          ],
+          "status": [
+            "Accepted - Plan Review Req"
+          ],
+          "workFlow": {
+            "": ""
+          },
+          "isCreatedByACA": false,
+          "isACAEvent": false,
+          "recordStatus": [
+            "Submitted"
+          ],
+          "balanceAllowed": true
+        },
+        "action": {
+          "updateOpenDate": true,
+          "saveCreationDate": true,
+          "activateTask": [],
+          "daysOut": "10",
+          "useCalendarDays": false,
+          "deactivateTask": [],
+          "deleteTask": [],
+          "updateTask": [
+            {
+              "task": "Permit Issuance",
+              "status": "Issued"
+            }
+          ],
+          "invoiceFees": "",
+          "createChild": "Marijuana/Combo/Testing Facility/Application",
+          "createParent": "",
+          "addCondition": "",
+          "addConditionSeverity": " ",
+          "addConditionType": "",
+          "removeConditionType": "",
+          "removeCondition": "",
+          "addComment": "test Status",
+          "newStatus": "",
+          "assignToUserID": "",
+          "assessFees": [
+            {
+              "feeSchedule": "",
+              "feeCode": "",
+              "feeQuantity": 1,
+              "feeInvoice": "",
+              "feePeriod": ""
+            }
+          ],
+          "updateExpDate": {
+            "expirationType": "Days",
+            "expirationPeriod": "10",
+            "destination": "ExpDate",
+            "asiName": "RENEWAL INFO.Next Notification Date",
+            "customExpirationFunction": "testFunction"
+          },
+          "primaryContactType": "Applicant",
+          "feeSchedule": "BLDG_COM_ALT",
+          "feeCode": "BLDGCOMALT04",
+          "feeQuantity": 1,
+          "feeInvoice": "Y",
+          "feePeriod": "FINAL"
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
