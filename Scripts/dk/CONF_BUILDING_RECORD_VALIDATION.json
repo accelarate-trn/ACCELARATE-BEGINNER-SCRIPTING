@@ -1,0 +1,22 @@
+{
+  "Building/*/*/*": {
+    "WorkflowTaskUpdateBefore": [
+      {
+        "metadata": {
+          "description": "test records",
+          "operators": {}
+        },
+        "preScript": " ",
+        "criteria": {
+          "allowBalance": false,
+          "Task": "Permit Issuance",
+          "Status": "Issued"
+        },
+        "action": {
+          "validationMessage": "This action can't be taken"
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
