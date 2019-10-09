@@ -1,5 +1,5 @@
 if (wfTask == "Permit Issuance" && wfStatus == "Issued"  && balanceDue > 0){
-	showDebug = True;
+	showMessage = True;
 	comment("Pay the $$ Please!");
 	cancel = true;
 }
