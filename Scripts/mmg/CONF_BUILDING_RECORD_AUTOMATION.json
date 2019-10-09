@@ -1,0 +1,50 @@
+{
+  "Building/Commercial/Alteration/NA": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "Individual Exercise 1",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "customFields": {
+            "Gross Annual Sales": "12"
+          },
+          "task": [
+            "Application Intake"
+          ],
+          "status": [
+            "Accepted-Plan Review Req"
+          ]
+        },
+        "action": {
+          "updateOpenDate": true,
+          "saveCreationDate": true,
+          "activateTask": [],
+          "daysOut": "10",
+          "useCalendarDays": false,
+          "deactivateTask": [],
+          "deleteTask": [],
+          "updateTask": [
+            {
+              "task": "Permit Issuance",
+              "status": "Issued"
+            }
+          ],
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeCode": "BLDGCOMALT04",
+              "Payment Method": "FINAL",
+              "feeQuantity": 1,
+              "Fee Invoice": "Y",
+              "feePeriod": "FINAL"
+            }
+          ]
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
