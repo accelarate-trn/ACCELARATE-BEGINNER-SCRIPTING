@@ -1,0 +1,30 @@
+{
+  "Building/Commercial/Alteration/NA": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "test records",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "task": "Application Intake",
+          "status": "Accepted - Plan Review Req"
+        },
+        "action": {
+		  "invoiceFees": true,
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeCode": "BLDGCOMALT04",
+              "feeQuantity": 1,
+              "feeInvoice": true,
+              "feePeriod": "FINAL"
+            }
+          ]
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
