@@ -7,8 +7,12 @@
           "operators": {}
         },
         "criteria": {
-          "task": "Application Intake",
-          "status": "Accepted - Plan Review Req"
+          "task": [
+            "Application Intake"
+          ],
+          "status": [
+            "Accepted - Plan Review Req"
+          ]
         },
         "action": {
           "assessFees": [
