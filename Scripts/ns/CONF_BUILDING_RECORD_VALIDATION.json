@@ -1,6 +1,6 @@
 {
   "Building/*/*/*": {
-    "WorkFlowTaskUpdateBefore": [
+    "WorkflowTaskUpdateBefore": [
       {
         "metadata": {
           "description": "Group Exercise 2",
