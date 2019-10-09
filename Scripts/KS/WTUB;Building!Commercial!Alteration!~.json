@@ -1,0 +1,51 @@
+{
+  "Building/Commercial/Alteration/License": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "test records",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "customFields": {
+            "Gross Annual Sales": "12"
+          },
+          "task": [
+            "License Status"
+          ],
+          "status": [
+            "Active"
+          ],
+          "workFlow": {},
+          "balanceAllowed": true
+        },
+        "action": {
+          "updateOpenDate": true,
+          "activateTask": [],
+          "useCalendarDays": false,
+          "invoiceFees": "",
+          "addComment": "test Status",
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeCode": "BLDGC0MALT04",
+              "feeQuantity": 1,
+              "feeInvoice": "Y",
+              "feePeriod": ""
+            },
+            ""
+          ],
+          "updateExpDate": {
+            "expirationType": "Days",
+            "expirationPeriod": "10",
+            "destination": "ExpDate",
+            "asiName": "RENEWAL INFO.Next Notification Date",
+            "customExpirationFunction": "testFunction"
+          }
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
