@@ -1,0 +1,29 @@
+{
+  "Building/Commercial/Alteration/NA": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "COM-ALT-19-000005",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "task": "Application Intake",
+          "status": "Application -Review Req"
+        },
+        "action": {
+          "assessFees": [
+            {
+              "feeSchedule": "BLD_COM_ALT",
+              "feeCode": "BLDGCOMALT04",
+              "feeQuantity": 1,
+              "feeInvoice": "Y",
+              "feePeriod": "FINAL"
+            }
+          ]
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
