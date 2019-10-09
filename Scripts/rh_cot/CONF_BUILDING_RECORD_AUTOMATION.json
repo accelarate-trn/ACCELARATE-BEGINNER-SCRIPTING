@@ -21,7 +21,8 @@
               "feeInvoice": "Y",
               "feePeriod": "Final"
             }
-          ]
+          ],
+          "validationMessage": "The JSON executed."
         },
         "postScript": ""
       }
