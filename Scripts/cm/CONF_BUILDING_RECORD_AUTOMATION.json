@@ -1,0 +1,34 @@
+{
+  "Building/Commercial/Alteration/*": {
+    "WorkflowTaskUpdateAfter": [
+      {
+        "metadata": {
+          "description": "DIY example",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "task": [
+            "Application Intake"
+          ],
+          "status": [
+            "Accepted - Plan Review Req"
+          ]
+        },
+        "action": {
+          "invoiceFees": true,
+          "assessFees": [
+            {
+              "feeSchedule": "BLDG_COM_ALT",
+              "feeCode": "BLDGCOMALT04",
+              "feeQuantity": 1,
+              "feeInvoice": "Y",
+              "feePeriod": "FINAL"
+            }
+          ]
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
