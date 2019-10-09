@@ -1,0 +1,22 @@
+{
+  "Building/*/*/*": {
+    "WorkflowTaskUpateBefore": [
+      {
+        "metadata": {
+          "description": "Group Exercise 2",
+          "operators": {}
+        },
+        "preScript": " ",
+        "criteria": {
+          "allowBalance": false,
+          "task": "Permit Issuance",
+          "status": "Issued"
+        },
+        "action": {
+          "validationMessage": "This action cannont be taken until all fees are paid."
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
