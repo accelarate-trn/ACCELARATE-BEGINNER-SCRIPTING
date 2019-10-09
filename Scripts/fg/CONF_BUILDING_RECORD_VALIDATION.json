@@ -1,0 +1,22 @@
+{
+  "Building/*/*/*": {
+    "WorkflowUpdateBefore": [
+      {
+        "metadata": {
+          "description": "This is a description!",
+          "operators": {}
+        },
+        "preScript": "",
+        "criteria": {
+          "allowBalance": true,
+          "task": "Permit Issuance",
+          "status": "Issued"
+        },
+        "action": {
+          "validationMessage": "Nice permit you got there. Shame if something happened to it."
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
