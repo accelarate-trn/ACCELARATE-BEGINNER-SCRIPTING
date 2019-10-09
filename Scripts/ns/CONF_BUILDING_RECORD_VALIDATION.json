@@ -1,6 +1,6 @@
 {
   "Building/*/*/*": {
-    "ApplicationSpecificInfoUpdateBefore": [
+    "WorkFlowTaskUpdateBefore": [
       {
         "metadata": {
           "description": "Group Exercise 2",
