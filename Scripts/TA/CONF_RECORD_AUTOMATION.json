@@ -16,7 +16,6 @@
           ]
         },
         "action": {
-          "invoiceFees": "Y",
           "assessFees": [
             {
               "feeSchedule": "BLDG_COM_ALT",
