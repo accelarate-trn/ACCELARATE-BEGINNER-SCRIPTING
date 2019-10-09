@@ -1,0 +1,25 @@
+{
+  "Building/*/*/*": {
+    "WorkflowTaskUpdateBefore": [
+      {
+        "metadata": {
+          "description": "Group Exercise 2",
+          "operators": {}
+        },
+        "preScript": " ",
+        "criteria": {
+          "requiredLP": [
+            "test haetham"
+          ],
+          "allowBalance": false,
+          "task": "Permit Issuance",
+          "status": "Issued"
+        },
+        "action": {
+          "validationMessage": "\"this action cannot be taken until all fees are paid."
+        },
+        "postScript": ""
+      }
+    ]
+  }
+}
