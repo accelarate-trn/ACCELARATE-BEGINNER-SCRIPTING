@@ -72,9 +72,9 @@ function logDebug(msg){
 
 function printJson(title, json){
 	try{
-		logDebug(title + ": " + JSON.stringify(json));
+		logDebug(title + "1: " + JSON.stringify(json));
 	}catch(e){
-		logDebug(title + ": " + json);
+		logDebug(title + "2: " + json);
 	}
 }
 

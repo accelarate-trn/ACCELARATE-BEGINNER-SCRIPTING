@@ -71,7 +71,7 @@ function getWorkflowDetals(processCode){
 		var result = dba.select(sqlStatus, params, utilProcessor, null);
 		result = result.toArray();
 		for ( var x in result) {
-			statusTranslations[result[x]["RES_ID"]] = result[x]["R3_ACT_STAT_DES"]
+			statusTranslations[result[x]["RES_ID"]] = result[x]["R3_ACT_STAT_DES"];
 		}
 		// handle departments and translations
 		var nodes = graph.getRoot().getNodes().toArray();
@@ -132,12 +132,14 @@ function getWorkflowDetals(processCode){
 				if (deptMap.hasOwnProperty(deptCode)) {
 					departmentName = String(deptMap[deptCode].getDeptName());
 				}
+				var taskSeconLang = String(tasksTranslations[refTaskItemModel.getResId()]);
+				taskSeconLang = taskSeconLang == null || taskSeconLang == undefined || taskSeconLang == "undefined" ? "" : taskSeconLang;
 				nodeObj.cells = {
 					"Step" : String(node.getId() * 10),
 					"Task (Time)" : refTaskItemModel.getDueDate() != null ? String(refTaskItemModel.getDueDate()) : "",
 					"Task" : String(refTaskItemModel.getTaskName()),
 					"TSI" : refTaskItemModel.getCheckboxCode() == null ? "" : String(refTaskItemModel.getCheckboxCode()),
-					"Task [SECOND_LANG]" : String(tasksTranslations[refTaskItemModel.getResId()]),
+					"Task [SECOND_LANG]" : taskSeconLang,
 					"Status" : "",
 					"Status [SECOND_LANG]" : "",
 					"Flow Control" : "",
@@ -207,9 +209,11 @@ function getWorkflowDetals(processCode){
 								flowcontrol.push(flows[g].getCell().getTarget() * 10)
 							}
 						}
+						var statusSecondLang = String(statusTranslations[refTaskStatusModel.getResId()]);
+						statusSecondLang = statusSecondLang == null || statusSecondLang == undefined || statusSecondLang == "undefined" ? "" : statusSecondLang;
 						sourceNode.addFlow({
 							"Status" : String(refTaskStatusModel.getStatusDescription()),
-							"Status [SECOND_LANG]" : String(statusTranslations[refTaskStatusModel.getResId()]),
+							"Status [SECOND_LANG]" : statusSecondLang,
 							"Flow Control" : flowcontrol.join(","),
 							"Timer Action" : refTaskStatusModel.getClockAction() == null ? "" : String(refTaskStatusModel.getClockAction()),
 							"Application / Record Status" : String(refTaskStatusModel.getApplicationStatus()),
@@ -219,9 +223,11 @@ function getWorkflowDetals(processCode){
 						for ( var s in statuses) {
 							var refTaskStatusModel = statuses[s]
 
+							var statusSecondLang = String(statusTranslations[refTaskStatusModel.getResId()]);
+							statusSecondLang = statusSecondLang == null || statusSecondLang == undefined || statusSecondLang == "undefined" ? "" : statusSecondLang;
 							sourceNode.addFlow({
 								"Status" : String(refTaskStatusModel.getStatusDescription()),
-								"Status [SECOND_LANG]" : String(statusTranslations[refTaskStatusModel.getResId()]),
+								"Status [SECOND_LANG]" : statusSecondLang,
 								"Flow Control" : targetNode.type == "End" ? "END" : String(targetNode.obj.getId() * 10),
 								"Timer Action" : refTaskStatusModel.getClockAction() == null ? "" : String(refTaskStatusModel.getClockAction()),
 								"Application / Record Status" : String(refTaskStatusModel.getApplicationStatus()),
@@ -691,17 +697,21 @@ WKF.prototype.create = function(conf, processCode, flowStyle, override) {
 		logDebug("graph: " + graph);
 		var metaDataDefinition = com.accela.workflowdesigner.model.GraphAnalysis.toXML(graph);
 		logDebug("metaDataDefinition: " + metaDataDefinition);
-		try{this.validateGraph(metaDataDefinition);}catch(e){logDebug("ERR Validating Grapth: " + e);}//TBR
+		try{
+			this.validateGraph(metaDataDefinition);
+		}catch(e){
+			logDebug("ERR Validating Grapth: " + e);
+		}//TBR
 		var refProcessRelationModel = new com.accela.orm.model.workflow.RefProcessRelationModel();
 		refProcessRelationModel.setServiceProviderCode(aa.getServiceProviderCode());
 		refProcessRelationModel.setWorkflowName(processCode);
 		refProcessRelationModel.setProcessCode(processCode);
 		refProcessRelationModel.setParentProcessID(new java.lang.Long("0"));
 		refProcessRelationModel.setStepNumber(new java.lang.Integer(0));
-
+		logDebug('WF..............   1');
 		refProcessRelationModel.setTaskActivation("I");
 		refProcessRelationModel.setAuditModel(new com.accela.orm.model.common.AuditModel())
-
+		logDebug('WF..............   2');
 		refProcessRelationModel.getAuditModel().setAuditID(aa.getAuditID());
 		refProcessRelationModel.getAuditModel().setAuditDate(new Date());
 		refProcessRelationModel.getAuditModel().setAuditStatus("A");
@@ -711,14 +721,19 @@ WKF.prototype.create = function(conf, processCode, flowStyle, override) {
 		refWorkflowMetadataModel.setMetaDataDefinition(metaDataDefinition);
 		refWorkflowMetadataModel.setNeedLayout(true);
 		refProcessRelationModel.setWorkflowMetadata(refWorkflowMetadataModel);
+		logDebug('WF..............   3');
 		var service = com.accela.aa.util.EJBProxy.getRefWorkflowDesignerService();
 		var results = null;
 		if (override == true) {
+			logDebug('WF..............   4 1');
 			results = service.updateWorkflow(refProcessRelationModel, true);
 		} else {
+			logDebug('WF..............   4 2');
 			results = service.createWorkflow(refProcessRelationModel, false);
 		}
+		logDebug('WF..............   5');
 		if (results == null || results == undefined || !results.isSuccess()) {
+			logDebug('WF..............   6');
 			var map = results.getResults();
 			var keys = map.keySet().toArray();
 
@@ -751,7 +766,6 @@ WKF.prototype.create = function(conf, processCode, flowStyle, override) {
 		if(this.LANG_ID != null){
 			this.translateStatus(processCode);
 		}
-		ret.SUCCESS = true;
 		
 		ret = {
 				"success": true,
@@ -760,12 +774,10 @@ WKF.prototype.create = function(conf, processCode, flowStyle, override) {
 		
 	} catch (e) {
 		logDebug("WF:GERR: " + e);
-		ret.SUCCESS = false;
-		ret.ERROR = String(e);
-		
 		ret = {
 				"success": false,
-				"exists": true
+				"exists": true,
+				"error": String(e)
 			};
 	}
 	return ret;
@@ -863,8 +875,8 @@ WKF.prototype.translateStatus = function(process) {
 	ret = result.toArray()
 	for ( var s in ret) {
 		var status = ret[s];
-		var trans = this.statusTranslations[status.R3_ACT_STAT_DES]
-		if (!trans) {
+		var trans = this.statusTranslations[status.R3_ACT_STAT_DES];
+		if (!trans || trans == null || trans == undefined) {
 			trans = status.R3_ACT_STAT_DES;
 		}
 		var params = [ aa.getServiceProviderCode(), new java.lang.Long(status.RES_ID), this.LANG_ID, trans, status.APPLICATION_STATUS, aa.util.formatDate(new Date(), "MM/dd/yyyy"),
@@ -981,15 +993,16 @@ function toJson(obj) {
     try {
         return JSON.parse(obj);
     } catch (e) {
+    	logDebug("ERR Parsing JSON: " + e);
         return obj;
     }
 }
 
 function printJson(title, json){
 	try{
-		logDebug(title + ": " + JSON.stringify(json));
+		logDebug(title + "1: " + JSON.stringify(json));
 	}catch(e){
-		logDebug(title + ": " + json);
+		logDebug(title + "2: " + json);
 	}
 }
 
@@ -1007,5 +1020,6 @@ function createUpdateWorkflow(departmentListParam, json, wfCode, flowStyle, over
 	var ret = new WKF(langId).create(json, wfCode, flowStyle, override);
 	logDebug('Create/Update Workflow Result: ' + JSON.stringify(ret));
 	
-	return JSON.stringify(ret);
+//	return JSON.stringify(ret);
+	return ret;
 }

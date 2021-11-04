@@ -21,7 +21,7 @@ var className = "";
 var searchObj = "";
 var subModels = "";
 
-function logDebug(msg) {
+function (msg) {
 	aa.print(msg);
 	java.lang.System.out.println(msg);
 }
@@ -252,7 +252,7 @@ ConfigEngine.prototype.updateBySQL = function (sqlString, parameters) {
 		this.handleUpdateResult(updateResult);
 	}catch(e){
 		logDebug('Error updating using new DB API, Going to update using legacy DB API');
-		logDebug('Update ERR: ' + e)
+		logDebug('Update ERR: ' + e);
 		this.updateBySQLLegacy(sqlString, parameters);
 	}
 }
@@ -266,12 +266,13 @@ ConfigEngine.prototype.handleUpdateResult = function(result) {
 }
 
 ConfigEngine.prototype.updateBySQLLegacy = function(sql, params) {
+	params = params == null || params == undefined ? [] : params;
 	var dba = com.accela.aa.datautil.AADBAccessor.getInstance();
 	var result = dba.update(sql, params);
 	logDebug('updateBySQLLegacy:result: ' + result);
 }
 
-ConfigEngine.prototype.search = function (jsonObj, asJson, allSubModels, includeAuditDate, doCascade) {
+ConfigEngine.prototype.search = function (jsonObj, asJson, allSubModels, includeAuditDate, doCascade, getActive) {
 	logDebug('Search .............................');
 	logDebug('jsonObj: ' + JSON.stringify(jsonObj));
 	logDebug('asJson: ' + asJson);
@@ -281,6 +282,22 @@ ConfigEngine.prototype.search = function (jsonObj, asJson, allSubModels, include
 	logDebug('className: ' + this.className);
 	logDebug('subModels: ' + JSON.stringify(this.subModels));
 	var entityObj = ConfigEngine.jsonToEntityClass(jsonObj, this.className, false);
+	
+	var isActive = 'I';
+	if (getActive == null || getActive == undefined || getActive == true) {
+		isActive = 'A';
+	}
+	
+	if (entityObj instanceof com.accela.orm.model.AuditModelEnable) {
+		var auditMod = new com.accela.orm.model.common.AuditModel();
+		auditMod.setAuditStatus(isActive);
+		entityObj.setAuditModel(auditMod);
+	} else {
+		try{
+			entityObj.setRecStatus(isActive);
+		}catch(e){}
+	}
+	
 
 	var resArr = [];
 	if (doCascade) {
@@ -431,10 +448,12 @@ ConfigEngine.prototype.create = function (pkJsonObj, jsonObjArr, subModelsMap, o
 			}
 		}
 	}
-
+	
 	// Go over the entites and create them
+	logDebug('jsonObjArr.length: ' + jsonObjArr.length);
 	for (var w = 0; w < jsonObjArr.length; w++) {
 		var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap);
+		logDebug("entityObj::: " + entityObj);
 		this.createEntityCascade(entityObj, subModelsMap, false);
 	}
 	
@@ -555,6 +574,7 @@ ConfigEngine.prototype.updateEntityCascade = function (entityObj, subModelsMap, 
 }
 
 ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, updateObj) {
+	logDebug('createEntityCascade.........................');
 	if (!subModelsMap) {
 		subModelsMap = {};
 	}
@@ -569,10 +589,11 @@ ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, 
 		try {
 			entityObj = this.genDao.create(entityObj, true);
 			createCount++;
+			logDebug('No Errors............');
 		} catch (e) {
 			var error = "";
 			if (e.getMessage) {
-				error = e.getMessage()
+				error = e.getMessage();
 			} else {
 				error = e + "";
 			}
@@ -804,8 +825,17 @@ ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, sp
 
 	if (addAuditModel) {
 		// TODO: Convert it to use embedded models
+		var isActive = jsonObj["ISACTIVE"]; 
+		
 		if (annotationsObj.getPropertyList().containsKey("auditModel")) {
-			obj.setAuditModel(new com.accela.orm.model.common.AuditModel(new Date(), aa.getAuditID(), "A"));
+			logDebug("isActive#1: " + isActive);
+			if(isActive != null && isActive != undefined && (isActive == false || isActive == 'false' || isActive == 'False' || isActive == 'FALSE' )){
+				logDebug("isActive#1: Adding I");
+				obj.setAuditModel(new com.accela.orm.model.common.AuditModel(new Date(), aa.getAuditID(), "I"));
+			}else{
+				logDebug("isActive#1: Adding A");
+				obj.setAuditModel(new com.accela.orm.model.common.AuditModel(new Date(), aa.getAuditID(), "A"));
+			}
 		} else {
 			// Some entities don't have an audit model, instead they have its
 			// content directly on the object itself
@@ -821,7 +851,13 @@ ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, sp
 			} else {
 				jsonObj["REC_DATE"] = new java.util.Date();
 				jsonObj["REC_FUL_NAM"] = aa.getAuditID();
-				jsonObj["REC_STATUS"] = "A";
+				if(isActive != null && isActive != undefined && (isActive == false || isActive == 'false' || isActive == 'False' || isActive == 'FALSE' )){
+					logDebug("isActive#2: Adding I");
+					jsonObj["REC_STATUS"] = "I";
+				}else{
+					logDebug("isActive#2: Adding A");
+					jsonObj["REC_STATUS"] = "A";
+				}
 			}
 		}
 	}
@@ -944,6 +980,23 @@ function distinctList(list){
 	return json2array(map);
 }
 
+function contains(thisArr, v) {
+	for (var i = 0; i < thisArr.length; i++) {
+		if (thisArr[i] === v) return true;
+	}
+	return false;
+};
+
+function unique(thisArr) {
+	var arr = [];
+	for (var i = 0; i < thisArr.length; i++) {
+		if (!contains(arr, thisArr[i])) {
+			arr.push(thisArr[i]);
+		}
+	}
+	return arr;
+}
+
 function json2array(json){
     var result = [];
     var keys = Object.keys(json);
@@ -951,4 +1004,218 @@ function json2array(json){
         result.push(json[key]);
     });
     return result;
+}
+
+/* ------------------------------------------------------------------------------------------------------/
+| Private methodes
+/------------------------------------------------------------------------------------------------------ */
+
+
+function getDeletedItems(keys, sysData, input) {
+return sysData.filter(function (sysItem) {
+	return input.filter(function (inItem) {
+		exist = true
+		for (var k in keys) {
+			var key = keys[k]
+			exist = exist && (inItem[key] == sysItem[key])
+		}
+		return exist
+	}).length == 0
+})
+}
+
+function getItemsByFilter(keys, input, filter) {
+return input.filter(function (inItem) {
+	exist = true
+	for (var k in keys) {
+		var key = keys[k];
+		exist = exist && (inItem[key] == filter[key]);
+	}
+	return exist;
+});
+}
+
+function getCreatedItems(keys, sysData, input) {
+return input.filter(function (inItem) {
+	return sysData.filter(function (sysItem) {
+		exist = true
+		for (var k in keys) {
+			var key = keys[k]
+			exist = exist && (inItem[key] == sysItem[key])
+		}
+		return exist
+	}).length == 0
+})
+}
+
+function getItemByKeyValue(sysData, key, value){
+for(var s in sysData){
+	if(sysData[s][key] == value){
+		return sysData[s];
+	}
+}
+
+return null;
+}
+
+function getExistsItems(keys, sysData, input) {
+var existItems = input.filter(function (inItem) {
+	return sysData.filter(function (sysItem) {
+		exist = true;
+		for (var k in keys) {
+			var key = keys[k];
+			exist = exist && (inItem[key] == sysItem[key]);
+		}
+		return exist;
+	}).length > 0;
+});
+
+return existItems;
+}
+
+function getUpdatedItemsByFields(keys, sysData, input, fields) {
+var existItems = input.filter(function (inItem) {
+	return sysData.filter(function (sysItem) {
+		exist = true;
+		for (var k in keys) {
+			var key = keys[k];
+			exist = exist && (inItem[key] == sysItem[key]);
+		}
+		return exist;
+	}).length > 0;
+})
+
+var updatedItems = existItems.filter(function (exItem) {
+	var sysItem = sysData.filter(function (item) {
+		exist = true;
+		for (var k in keys) {
+			var key = keys[k];
+			exist = exist && (item[key] == exItem[key]);
+		}
+		return exist;
+	})[0];
+	return !compareObjectPropsByFields(exItem, sysItem, fields);
+})
+return updatedItems;
+}
+
+function getUpdatedItems(keys, sysData, input, subKeys, hasItems) {
+	logDebug('getUpdatedItems......................');
+	try{
+		var existItems = input.filter(function (inItem) {
+			return sysData.filter(function (sysItem) {
+				exist = true;
+				for (var k in keys) {
+					var key = keys[k];
+					exist = exist && (inItem[key] == sysItem[key]);
+				}
+				return exist;
+			}).length > 0;
+		})
+		
+		var updatedItems = existItems.filter(function (exItem) {
+			
+			if(hasItems != null && hasItems != undefined){
+				logDebug('hasItems != null');
+				for(var h in hasItems){
+					if(exItem.hasOwnProperty(hasItems[h])){
+						logDebug('hasItems != null');
+						return true;
+					}
+				}
+			}else{
+				logDebug('hasItems == null');
+			}
+			
+			var sysItem = sysData.filter(function (item) {
+				exist = true;
+				for (var k in keys) {
+					var key = keys[k];
+					exist = exist && (item[key] == exItem[key]);
+				}
+				return exist;
+			})[0];
+			return !compareObjectProps(exItem, sysItem, subKeys);
+		})
+		return updatedItems;
+	}catch(e){
+		logDebug("Error Getting Updated Items: " + e);
+		return [];
+	}
+}
+
+function compareObjectPropsByFields(obj1, obj2, fields) {
+obj1 = stringifyJSType(obj1);
+obj2 = stringifyJSType(obj2);
+
+for (var p in obj1) {
+	if (obj2.hasOwnProperty(p) && arrayincludes(fields, p)) {
+		if (typeof obj1[p] === 'string') {
+			if (!isNaN(obj1[p]) && !isNaN(obj2[p])) {
+				if (parseFloat(obj1[p]) != parseFloat(obj2[p])){
+					return false;
+				}
+			} else {
+				if (obj1[p] != obj2[p]){
+					return false;
+				}
+			}
+		}else{
+			if (!compareObjectPropsByFields(obj1[p], obj2[p], fields)){
+				return false;
+			}
+		}
+	}
+}
+
+return true;
+}
+
+function arrayincludes(array, val){
+for(var r in array){
+	if(array[r] === val){
+		return true;
+	}
+}
+return false;
+}
+
+function compareObjectProps(obj1, obj2, subKeys) {
+obj1 = stringifyJSType(obj1)
+obj2 = stringifyJSType(obj2)
+for (var p in obj1) {
+	if (!isNullOrEmpty(obj1[p])) {
+		if (typeof obj1[p] === 'string') {
+			if (obj2.hasOwnProperty(p)) {
+				if (!isNaN(obj1[p]) && !isNaN(obj2[p])) {
+					if (parseFloat(obj1[p]) != parseFloat(obj2[p])){
+						return false;
+					}
+				} else {
+					if (obj1[p] != obj2[p]) return false
+				}
+			}
+		} else if (Array.isArray(obj1[p])) {
+			if (subKeys[p]) {
+				if (obj1[p].length != obj2[p].length) {
+					return false;
+				} else {
+					var updated = getUpdatedItems([subKeys[p]], obj2[p], obj1[p])
+					return updated.length == 0;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			if (!compareObjectProps(obj1[p], obj2[p], subKeys)){
+				return false;
+			}
+		}
+	} else {
+		if (!isNullOrEmpty(obj2[p])){
+			return false;
+		}
+	}
+}
+return true;
 }

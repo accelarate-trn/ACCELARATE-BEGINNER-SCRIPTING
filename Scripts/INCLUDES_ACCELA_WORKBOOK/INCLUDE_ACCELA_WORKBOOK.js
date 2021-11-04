@@ -87,12 +87,112 @@ function cmd_createASI(){
 	
 	json = toJson(json);
 	
-	var result = ConfigEngineAPI.createASI(json, override);
+	var errorMessage = "";
+	for(var j in json){
+		if(json[j]["R1_TABLE_GROUP_NAME"].length > 12){
+			errorMessage = "The R1_TABLE_GROUP_NAME exceeds the allowed limit (12 letters)";
+			break;
+		}
+	}
+	
+	var result = "";
+	
+	if(errorMessage == ""){
+		result = ConfigEngineAPI.createASI(json, override, false);
+	}else{
+		result = {
+				"success": false,
+				"displayerror": true,
+				"message": errorMessage
+				};
+	}
 	
 	var res = {
 		"message": "Success",
 		"content": result
 	};
+	
+	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	return res;
+}
+
+function cmd_createASISubGroup(){//Add new SubGroup Only
+	logDebug("cmd_createASISubGroup.......................................");
+	
+	var params = param("params");
+	logDebug("params: " + params);
+	
+	var json = param("json");
+	printJson("json", json);
+	
+	var action = param("action");
+	logDebug("action: " + action);
+	
+	var override = param("override");
+	logDebug("override: " + override);
+	
+	var params2 = param("params2");
+	logDebug("params2: " + params2);
+	
+	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
+	
+	var serviceCode = toJson(params);
+	logDebug("serviceCode: " + serviceCode[1]);
+	
+	json = toJson(json);
+	
+	var subGroups = [];
+	for(var j in json){
+		subGroups.push(json[j]["R1_CHECKBOX_TYPE"]);
+	}
+	subGroups = unique(subGroups);
+	
+	var err = null;
+	
+	for(var s in subGroups){
+		logDebug('subGroups[s]: ' + subGroups[s]);
+		var sArr = ConfigEngineAPI.searchASISubGroup(serviceCode[1], subGroups[s]);
+		if(sArr != null && sArr.length > 0){
+			logDebug('sArr.length: ' + sArr.length);
+			if(err == null){
+				err = 'The following Subgroup\s already exists: ';
+				err += subGroups[s];
+			}else{
+				err += ', ' + subGroups[s];
+			}
+			logDebug('err: ' + err);
+		}
+	}
+	
+	var res;
+	var result;
+	
+	if(err == null){
+		logDebug('err == null');
+		result = ConfigEngineAPI.createASI(json, override, true);
+		
+		res = {
+				"message": "Success",
+				"content": result
+			};
+	}else{
+		logDebug('err != null');
+		
+		result = {
+			"success": false,
+			"exists": true,
+			"displayerror": true,
+			"message": err
+		};
+		
+		res = {
+				"message": "Failed",
+				"content": result
+			};
+	}
+	
+	
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
 	
@@ -147,7 +247,25 @@ function cmd_createASIT(){
 	
 	json = toJson(json);
 	
-	var result = ConfigEngineAPI.createASIT(json, override);
+	var errorMessage = "";
+	for(var j in json){
+		if(!isEmpty(json[j]["R1_TABLE_GROUP_NAME"]) && json[j]["R1_TABLE_GROUP_NAME"].length > 12){
+			errorMessage = "The R1_TABLE_GROUP_NAME exceeds the allowed limit (12 letters)";
+			break;
+		}
+	}
+	
+	var result = "";
+	
+	if(errorMessage == ""){
+		result = ConfigEngineAPI.createASIT(json, override);
+	}else{
+		result = {
+				"success": false,
+				"displayerror": true,
+				"message": errorMessage
+				};
+	}
 	
 	var res = {
 		"message": "Success",
@@ -483,6 +601,8 @@ function cmd_createSequences(){
 	
 	json = toJson(json);
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var result;
 	
 	if(override){
@@ -511,10 +631,12 @@ function cmd_createSequences(){
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Sequences", String(jsonInputOrg[0]["SEQ_NAME"]), jsonInputOrg, result, override);
+	}
+	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
-	
-	
-	
 	
 	return res;
 }
@@ -1173,8 +1295,13 @@ function cmd_createApplicationType(){
 	json = toJson(json);
 	
 	var connectWithPF = false;
-	if(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'] != null && json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'] != undefined && json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'] != '' ){
+	try{
+	logDebug("isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])::: " + isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA']));
+	if(!isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])){
 		connectWithPF = true;
+	}
+	}catch(e){
+		logDebug("ERR:R1_SMARTCHOICE_CODE_FOR_ACA: " + e);
 	}
 	
 	var result = ConfigEngineAPI.createApplicationType(json, override);
@@ -1678,6 +1805,25 @@ function cmd_searchTimeTypeModel(){
 	return res;
 }
 
+function cmd_searchDrillDownList(){
+	logDebug("cmd_searchDrillDownList.......................................");
+	var params = param("params");
+	logDebug("params: " + params);
+
+	var serviceCode = toJson(params);
+	logDebug("serviceCode: " + serviceCode[1]);
+	
+	var result = ConfigEngineAPI.searchDrillDownList(serviceCode[1]);
+	logDebug(JSON.stringify(stringifyJSType(result)));
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	return res;
+}
+
 function cmd_searchDrillDownModel(){
 	logDebug("cmd_searchDrillDownModel.......................................");
 	var params = param("params");
@@ -1725,6 +1871,9 @@ logDebug("cmd_createDrillDownModel.......................................");
 	logDebug("serviceCode: " + serviceCode[1]);
 	
 	json = toJson(json);
+	
+	var jsonInputOrg = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var result;
 	
 	if(override){
@@ -1836,7 +1985,10 @@ logDebug("cmd_createDrillDownModel.......................................");
 		"message": "Success",
 		"content": result
 	};
-	
+	if(result["success"] == true){
+		archive_GITHUB("Drilldown", String(jsonInputOrg[0]["DRLLD_NAME"]), jsonInputOrg, result, override);
+	}
+
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
 	
 	return res;
@@ -1967,6 +2119,8 @@ function cmd_createDrillDownMapping(){
 	
 	logDebug('json Updated: ' + JSON.stringify(stringifyJSType(json)));
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	result = ConfigEngineAPI.createDrillDownMapping(json, override);
 	
 //	var result = {
@@ -1978,6 +2132,10 @@ function cmd_createDrillDownMapping(){
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Drilldown Mapping", String(serviceCode[1]), jsonInputOrg, result, override);
+	}
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
 	
@@ -2233,6 +2391,23 @@ function cmd_searchDepartmentList() {
 
 	var paramsArr = toJson(params);
 	var result = ConfigEngineAPI.searchDepartmentList(paramsArr[0], true);
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+
+	logDebug("searchDepartmentList:: " + JSON.stringify(stringifyJSType(res)));
+	
+	return res;
+}
+
+function cmd_searchDepartmentListFlow() {
+	logDebug('cmd_searchDepartmentListFlow..........................................');
+	var params = param("params");
+	var sql = param("sql");
+
+	var paramsArr = toJson(params);
+	var result = ConfigEngineAPI.searchDepartmentListFlow(paramsArr[0], paramsArr[1], true);
 	var res = {
 		"message": "Success",
 		"content": result

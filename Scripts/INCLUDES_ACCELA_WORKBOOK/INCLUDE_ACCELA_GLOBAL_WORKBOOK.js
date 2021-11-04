@@ -29,6 +29,7 @@ var skipDelete = true;
 
 /*------------------------------------------------------------------------------------------------------*/
 function cmd_getAllTimeAccountGroups() {
+	logDebug('cmd_getAllTimeAccountGroups..........................................');
 	var result = ConfigEngineAPI.getAllTimeAccountGroups(false);
 	var res = {
 		"message": "Success",
@@ -39,14 +40,19 @@ function cmd_getAllTimeAccountGroups() {
 }
 
 function cmd_updateTimeAccountGroups() {
+	logDebug("cmd_updateTimeAccountGroups.......................................");
 	var params = param("params");
+	printJson("params", params);
 	var json = param("json");
+	printJson("json", json);
 	var override = param("override");
 	var Delete = param("delete");
 
 	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
 
 	json = toJson(json);
+	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 
 	var result = ConfigEngineAPI.updateTimeAccountGroups(json, override, Delete);
 
@@ -54,6 +60,10 @@ function cmd_updateTimeAccountGroups() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Time Accounting Group", params[0], jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -78,6 +88,7 @@ function cmd_updateTimeAccountTypes() {
 	Delete = Delete == 'true' || Delete == 'TRUE' || Delete == 'True' ? true : false;
 
 	json = toJson(json);
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 
 	var result = ConfigEngineAPI.updateTimeAccountTypes(json, override, Delete);
 
@@ -85,6 +96,10 @@ function cmd_updateTimeAccountTypes() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Time Accounting Type", params[0], jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -100,13 +115,17 @@ function cmd_getAllTimeTypesGroupsMapping() {
 }
 
 function cmd_updateTimeTypesGroupsMapping() {
+	logDebug('cmd_updateTimeTypesGroupsMapping..........................................');
 	var params = param("params");
+	printJson("params", params);
 	var json = param("json");
+	printJson("json", json);
 	var override = param("override");
 
 	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
 
 	json = toJson(json);
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 
 	var result = ConfigEngineAPI.updateTimeTypesGroupsMapping(json, override);
 
@@ -114,9 +133,70 @@ function cmd_updateTimeTypesGroupsMapping() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		
+		var mapping = [];
+		for(var m in jsonInputCloned){
+			
+			var timeTypeName = jsonInputCloned[m]["TIME_TYPE_NAME"];
+			var timeGroupModel = jsonInputCloned[m]["timeGroupModel"];
+			
+			for(var g in timeGroupModel){
+				var obj = {};
+				obj["TIME_TYPE_NAME"] = timeTypeName;
+				obj["TIME_GROUP_NAME"] = timeGroupModel[g]["TIME_GROUP_NAME"];
+				
+				mapping.push(obj);
+			}
+			
+		}
+		
+		archive_GITHUB("Time Types Groups Mapping", params[0], mapping, result, override);
+	}
 
 	return res;
 }
+
+function cmd_searchUserProfile(){
+	logDebug('cmd_getAllUsersInfo..........................................');
+	var params = param("params");
+	var sql = param("sql");
+
+	params = toJson(params);
+
+	var result = ConfigEngineAPI.searchUserProfile(params[0], params[1], false);
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("searchUserProfile:Result:: " + JSON.stringify(stringifyJSType(res)));
+
+	return res;
+}
+
+function cmd_createUpdateUserProfile() {
+	var json = param("json");
+	var override = param("override");
+
+	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
+
+	json = toJson(json);
+	
+
+	var result = ConfigEngineAPI.createUpdateUserProfile(json, override);
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("createUpdateUserProfile:Result:: " + JSON.stringify(stringifyJSType(res)));
+
+	return res;
+}
+
 
 function cmd_getAllUsersInfo() {
 	logDebug('cmd_getAllUsersInfo..........................................');
@@ -177,6 +257,8 @@ function cmd_updateUsers() {
 
 	json = toJson(json);
 	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var serviceProvidorCode = toJson(params)[0];
 	logDebug("serviceProvidorCode: " + serviceProvidorCode);
 
@@ -186,6 +268,10 @@ function cmd_updateUsers() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Users", String(serviceProvidorCode), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -224,6 +310,8 @@ function cmd_updateAgencyGroups() {
 	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
 
 	json = toJson(json);
+	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 
 	var result = ConfigEngineAPI.updateAgencyGroups(json);
 
@@ -231,6 +319,10 @@ function cmd_updateAgencyGroups() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Users Groups", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -332,6 +424,8 @@ function cmd_updateLicensedProfessionals() {
 	printJson("json", json);
 	
 	json = toJson(json);
+	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 
 	var result = ConfigEngineAPI.updateLicensedProfessionals(json, serviceProvidorCode, override);
 
@@ -341,6 +435,10 @@ function cmd_updateLicensedProfessionals() {
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Licensed Professionals", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -397,6 +495,8 @@ function cmd_updatePublicUsers() {
 	printJson("json", json);
 	
 	json = toJson(json);
+	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 
 	var result = ConfigEngineAPI.updatePublicUsers(json, serviceProvidorCode, override);
 
@@ -406,6 +506,10 @@ function cmd_updatePublicUsers() {
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Public Users", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -441,6 +545,8 @@ function cmd_updateContacts() {
 	
 	printJson("json", json);
 	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var serviceProvidorCode = toJson(params)[0];
 	logDebug("serviceProvidorCode: " + serviceProvidorCode);
 
@@ -450,6 +556,10 @@ function cmd_updateContacts() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Contacts", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -482,6 +592,8 @@ function cmd_updateCalendars() {
 
 	json = toJson(json);
 	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var serviceProvidorCode = toJson(params)[0];
 	logDebug("serviceProvidorCode: " + serviceProvidorCode);
 
@@ -491,6 +603,10 @@ function cmd_updateCalendars() {
 		"message": "Success",
 		"content": result
 	};
+	
+	if(result["success"] == true){
+		archive_GITHUB("Calendars", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -534,6 +650,8 @@ function cmd_createConditionStatus() {
 
 	json = toJson(json);
 	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var result = ConfigEngineAPI.createConditionStatus(json, serviceProvidorCode, override);
 	
 	var res = {
@@ -542,6 +660,10 @@ function cmd_createConditionStatus() {
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Condition Status", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -585,6 +707,8 @@ function cmd_createCondition() {
 
 	json = toJson(json);
 	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var result = ConfigEngineAPI.createCondition(json, serviceProvidorCode, override);
 	
 	var res = {
@@ -593,6 +717,10 @@ function cmd_createCondition() {
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Condition Type", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -702,6 +830,7 @@ function cmd_createStandaredComments() {
 	logDebug("serviceProvidorCode: " + serviceProvidorCode);
 	
 	json = toJson(json);
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 	
 	var result = ConfigEngineAPI.createStandaredComments(json, serviceProvidorCode, override);
 	
@@ -711,6 +840,10 @@ function cmd_createStandaredComments() {
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Standard Comments", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -758,6 +891,7 @@ function cmd_createActivityType() {
 	logDebug("serviceProvidorCode: " + serviceProvidorCode);
 	
 	json = toJson(json);
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 	
 	var result = ConfigEngineAPI.createActivityType(json, serviceProvidorCode, override);
 	
@@ -767,6 +901,10 @@ function cmd_createActivityType() {
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Activity Type", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -825,7 +963,7 @@ function cmd_createActivitySpecificInfo(){
 		"content": result
 	};
 	
-	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	logDebug("cmd_createActivitySpecificInfo:Result:: " + JSON.stringify(stringifyJSType(res)));
 	
 	return res;
 }
@@ -889,6 +1027,7 @@ function cmd_createSharedDropDowns(){
 	logDebug("serviceCode: " + serviceCode[1]);
 	
 	var resArr = [];
+	var jsonInputCloned;
 	
 	if(!override){
 		logDebug('Returning: {"success": false, "exists": true}');
@@ -899,6 +1038,8 @@ function cmd_createSharedDropDowns(){
 		
 	}else{
 		jsonInput = toJson(jsonInput);
+		
+		jsonInputCloned = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 		
 		for(var j in jsonInput){
 			var json = jsonInput[j];
@@ -1004,6 +1145,14 @@ function cmd_createSharedDropDowns(){
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
 	
+	if(result["success"] == true){
+		if(params.length > 1){
+			archive_GITHUB("Standard Choices", String(params[1]), jsonInputCloned, result, override);
+		}else{
+			archive_GITHUB("Standard Choices", String(params[0]), jsonInputCloned, result, override);
+		}
+	}
+	
 	return res;
 		}catch(e){
 			logDebug('Error Updating global standaredchoice: ' + e);
@@ -1065,6 +1214,7 @@ function cmd_createRenewalInfo(){
 	logDebug("serviceCode: " + serviceCode[0]);
 	
 	json = toJson(json);
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
 	
 	var result = ConfigEngineAPI.createRenewalInfo(json, override);
 	
@@ -1074,6 +1224,10 @@ function cmd_createRenewalInfo(){
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Renewal Info", String(params[0]), jsonInputCloned, result, override);
+	}
 	
 	return res;
 }
@@ -1220,6 +1374,8 @@ function cmd_createDepartments(){
 	
 	json = toJson(json);
 	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+	
 	var result = ConfigEngineAPI.createDepartments(json, override);
 	
 	var res = {
@@ -1228,6 +1384,10 @@ function cmd_createDepartments(){
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Departments", String(jsonInputCloned[0]["SERV_PROV_CODE"]), jsonInputCloned, result, override);
+	}
 	
 	return res;
 }
@@ -1608,6 +1768,52 @@ function cmd_createOffices(){
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	return res;
+}
+
+function cmd_searchFileComments(){
+	logDebug("cmd_searchFileComments.......................................");
+	var params = param("params");
+	logDebug("params: " + params);
+	
+	var modelName = params[0];
+	var fileName = params[1];
+	
+	var result = getFileComments_GITHUB(modelName, fileName);
+
+	var res = {};
+	
+	if(result == "GITHUB_NOT_CONFIGURED"){
+		res = {
+				"message": "GITHUB Not Configured for this server!",
+				"content": []
+			};
+	}else{
+		res = {
+			"message": "Success",
+			"content": result
+		};
+	}
+	
+	return res;
+}
+
+function cmd_searchFileBySHA(){
+	logDebug("cmd_searchFileBySHA.......................................");
+	var params = param("params");
+	logDebug("params: " + params);
+	
+	var modelName = params[0];
+	var fileName = params[1];
+	var sha = params[2];
+	
+	var result = getFileBySHA_GITHUB(modelName, fileName, sha);
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
 	
 	return res;
 }

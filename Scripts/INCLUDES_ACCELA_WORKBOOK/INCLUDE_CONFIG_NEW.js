@@ -335,7 +335,7 @@ ConfigEngine.prototype.updateBySQL = function (sqlString, parameters) {
 		this.handleUpdateResult(updateResult);
 	}catch(e){
 		logDebug('Error updating using new DB API, Going to update using legacy DB API');
-		logDebug('Update ERR: ' + e)
+		logDebug('Update ERR: ' + e);
 		this.updateBySQLLegacy(sqlString, parameters);
 	}
 }
@@ -368,6 +368,8 @@ ConfigEngine.prototype.createByEntity = function(insertSql, params){
 }
 
 ConfigEngine.prototype.updateBySQLLegacy = function(sql, params) {
+	logDebug('...............................updateBySQLLegacy...............................');
+	params = params == null || params == undefined ? [] : params;
 	var dba = com.accela.aa.datautil.AADBAccessor.getInstance();
 	var result = dba.update(sql, params);
 	logDebug('updateBySQLLegacy:result: ' + result);
@@ -849,9 +851,21 @@ ConfigEngine.jsonToEntityClassCascade = function (jsonObj, classPath, subModelsM
 }
 
 ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, specificFields, active) {
-	if(!active || active == null || active == undefined){
-		active = "A";
+	
+	var isActive = jsonObj["ISACTIVE"];
+	
+	if(isActive != null && isActive != undefined){
+		if(isActive == false || isActive == 'false' || isActive == 'False' || isActive == 'FALSE' ){
+			active = 'I';
+		}else{
+			active = "A";
+		}
+	}else{
+		if(!active || active == null || active == undefined){
+			active = "A";
+		}
 	}
+	
 	logDebug("active: " + active);
 	
 	var obj = ConfigEngine.getInstance(classPath);

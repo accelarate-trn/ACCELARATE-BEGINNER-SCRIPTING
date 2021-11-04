@@ -9,36 +9,37 @@
 |
 /------------------------------------------------------------------------------------------------------ */
 function getScriptText(vScriptName) {
-	var servProvCode = aa.getServiceProviderCode()
-	if (arguments.length > 1) { servProvCode = arguments[1] } // use different serv prov code
-	vScriptName = vScriptName.toUpperCase()
-	var emseBiz = aa.proxyInvoker.newInstance('com.accela.aa.emse.emse.EMSEBusiness').getOutput()
+	var servProvCode = aa.getServiceProviderCode();
+	if (arguments.length > 1) { servProvCode = arguments[1] ;} // use different serv prov code
+	vScriptName = vScriptName.toUpperCase();
+	var emseBiz = aa.proxyInvoker.newInstance('com.accela.aa.emse.emse.EMSEBusiness').getOutput();
 	try {
-		var emseScript = emseBiz.getScriptByPK(servProvCode, vScriptName, 'ADMIN')
-		return emseScript.getScriptText() + ''
+		var emseScript = emseBiz.getScriptByPK(servProvCode, vScriptName, 'ADMIN');
+		return emseScript.getScriptText() + '';
 	} catch (err) {
-		return ''
+		return '';
 	}
 }
 /* ------------------------------------------------------------------------------------------------------ */
-eval(getScriptText('INCLUDE_CONFIG_NEW'))
+eval(getScriptText('INCLUDE_CONFIG_NEW'));
+eval(getScriptText("INCLUDE_GITHUB"));
 /* ------------------------------------------------------------------------------------------------------ */
 function stringifyJSType(e) {
-	return e && (e.getClass ? e = String(e) : typeof e === 'object' ? e = stringifyObject(e) : Object.prototype.toString.call(e) === '[object Array]' && (e = stringifyArray(e))), e
+	return e && (e.getClass ? e = String(e) : typeof e === 'object' ? e = stringifyObject(e) : Object.prototype.toString.call(e) === '[object Array]' && (e = stringifyArray(e))), e;
 }
 
 function stringifyObject(e) {
 	for (var t in e) {
 		if (e.hasOwnProperty(t)) {
-			var r = e[t]
-			e[t] = stringifyJSType(r)
+			var r = e[t];
+			e[t] = stringifyJSType(r);
 		}
 	}
-	return e
+	return e;
 }
 
 function stringifyArray(e) {
-	for (var t = 0; t < e.length; t++) e[t] = stringifyJSType(e[t])
+	for (var t = 0; t < e.length; t++) e[t] = stringifyJSType(e[t]);
 }
 
 var MONTHS_GLOBAL = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -92,8 +93,8 @@ function stringToDate(_date,_format,_delimiter)
 }
 
 function logDebug(msg) {
-	aa.print(msg)
-	java.lang.System.out.println(msg)
+	aa.print(msg);
+	java.lang.System.out.println(msg);
 }
 
 function isNullOrEmpty(str) {
@@ -101,17 +102,17 @@ function isNullOrEmpty(str) {
 }
 /* ------------------------------------------------------------------------------------------------------ */
 function ConfigEngineAPI() { }
-ConfigEngineAPI.prototype = {}
-var conf = new ConfigEngine()
+ConfigEngineAPI.prototype = {};
+var conf = new ConfigEngine();
 /* ------------------------------------------------------------------------------------------------------ */
 ConfigEngineAPI.searchTimeAccountGroup = function (code, ignoreSubModels) {
-	conf.className = 'com.accela.orm.model.timeaccount.TimeGroupModel'
+	conf.className = 'com.accela.orm.model.timeaccount.TimeGroupModel';
 
 	var searchObj = {
 		'TIME_GROUP_NAME': String(code)
-	}
+	};
 
-	var resultTimeGroup = conf.search(searchObj, true, !ignoreSubModels, false, true)
+	var resultTimeGroup = conf.search(searchObj, true, !ignoreSubModels, false, true);
 
 	//	if(!ignoreSubModels){
 	//		for(counter in resultTimeGroup){
@@ -127,117 +128,123 @@ ConfigEngineAPI.searchTimeAccountGroup = function (code, ignoreSubModels) {
 	//		}
 	//	}
 
-	return resultTimeGroup
+	return resultTimeGroup;
 }
 
-ConfigEngineAPI.getAllTimeAccountGroups = function (ignoreSubModels) {
-	conf.className = 'com.accela.orm.model.timeaccount.TimeGroupModel'
-	var searchObj = { 'REC_STATUS': 'A' }
-	var resultTimeGroup = conf.search(searchObj, true, !ignoreSubModels, false, true)
-	return resultTimeGroup
+ConfigEngineAPI.getAllTimeAccountGroups = function (ignoreSubModels, ignoreRecStatus) {
+	conf.className = 'com.accela.orm.model.timeaccount.TimeGroupModel';
+	var searchObj = { 'REC_STATUS': 'A' };
+	if(ignoreRecStatus){
+		searchObj = {};
+	}
+	var resultTimeGroup = conf.search(searchObj, true, !ignoreSubModels, false, true);
+	return resultTimeGroup;
 }
 
 ConfigEngineAPI.updateTimeAccountGroups = function (jsonInput, overrideExisting, Delete) {
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
+	
+	var sysData = ConfigEngineAPI.getAllTimeAccountGroups(false);
 
-	var sysData = ConfigEngineAPI.getAllTimeAccountGroups(false)
-
-	conf.className = 'com.accela.orm.model.timeaccount.TimeGroupModel'
-	var searchObj = { 'TIME_GROUP_NAME': '' }
+	conf.className = 'com.accela.orm.model.timeaccount.TimeGroupModel';
+	var searchObj = { 'TIME_GROUP_NAME': '' };
 	var subModels = {
 		'timeGroupI18nModels': { 'ISLANG': true },
 		'xtimeGroupTypeModels': { 'ISGENERATOR': false },
 		'timeGroupSecurityModels': {}
-	}
+	};
 
-	var resArr = []
+	var resArr = [];
 
-	var deletedItems = getDeletedItems(['TIME_GROUP_NAME'], sysData, jsonInput)
+	var deletedItems = getDeletedItems(['TIME_GROUP_NAME'], sysData, jsonInput);
 	if (Delete && deletedItems.length > 0) {
 		for (var d in deletedItems) {
-			var dItem = deletedItems[d]
-			searchObj['TIME_GROUP_NAME'] = dItem['TIME_GROUP_NAME']
-			conf.Delete(searchObj, subModels)
+			var dItem = deletedItems[d];
+			searchObj['TIME_GROUP_NAME'] = dItem['TIME_GROUP_NAME'];
+			conf.Delete(searchObj, subModels);
 		}
 	}
 
-	var createdItems = getCreatedItems(['TIME_GROUP_NAME'], sysData, jsonInput)
+	var createdItems = getCreatedItems(['TIME_GROUP_NAME'], sysData, jsonInput);
 	for (var c in createdItems) {
-		var cItem = createdItems[c]
-		searchObj['TIME_GROUP_NAME'] = cItem['TIME_GROUP_NAME']
-		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, overrideExisting))
+		var cItem = createdItems[c];
+		searchObj['TIME_GROUP_NAME'] = cItem['TIME_GROUP_NAME'];
+		
+		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, overrideExisting));
 	}
 
-	var updatedItems = getUpdatedItems(['TIME_GROUP_NAME'], sysData, jsonInput, { 'timeGroupI18nModels': 'LANG_ID' })
+	var updatedItems = getUpdatedItems(['TIME_GROUP_NAME'], sysData, jsonInput, { 'timeGroupI18nModels': 'LANG_ID' });
 
 	for (var u in updatedItems) {
-		var uItem = updatedItems[u]
-		searchObj['TIME_GROUP_NAME'] = uItem['TIME_GROUP_NAME']
-		var exItem = sysData.filter(function (item) { return item['TIME_GROUP_NAME'] == uItem['TIME_GROUP_NAME'] })[0]
-		uItem['xtimeGroupTypeModels'] = exItem['xtimeGroupTypeModels'].map(function (mod) { return { 'TIME_TYPE_SEQ': mod['TIME_TYPE_SEQ'] } })
-		uItem['timeGroupSecurityModels'] = exItem['policyModel']
-		var policyModels = uItem['timeGroupSecurityModels']
-		fillPolicyModel(policyModels, 'TimeGroupSec', 'User')
-		resArr = resArr.concat(conf.create(searchObj, uItem, subModels, overrideExisting))
+		var uItem = updatedItems[u];
+		searchObj['TIME_GROUP_NAME'] = uItem['TIME_GROUP_NAME'];
+		var exItem = sysData.filter(function (item) { return item['TIME_GROUP_NAME'] == uItem['TIME_GROUP_NAME'] ;})[0];
+		uItem['xtimeGroupTypeModels'] = exItem['xtimeGroupTypeModels'].map(function (mod) { return { 'TIME_TYPE_SEQ': mod['TIME_TYPE_SEQ'] }; });
+		uItem['timeGroupSecurityModels'] = exItem['policyModel'];
+		var policyModels = uItem['timeGroupSecurityModels'];
+		fillPolicyModel(policyModels, 'TimeGroupSec', 'User');
+		
+		resArr = resArr.concat(conf.create(searchObj, uItem, subModels, overrideExisting));
 	}
 
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
-	result["delete"] = deletedItems.length > 0
-
-	return result
+	var result = resArr.filter(function (r) { return r.exists == true; }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	result["delete"] = deletedItems.length > 0;
+	
+	return result;
 }
 
 ConfigEngineAPI.updateTimeAccountTypes = function (jsonInput, overrideExisting, Delete) {
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
+	
+	var sysData = ConfigEngineAPI.getAllTimeAccountTypes(false);
 
-	var sysData = ConfigEngineAPI.getAllTimeAccountTypes(false)
-
-	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel'
-	var searchObj = { 'TIME_TYPE_NAME': '' }
+	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel';
+	var searchObj = { 'TIME_TYPE_NAME': '' };
 	var subModels = {
 		'timeTypeI18NModels': { 'ISLANG': true },
 		'timeGroupTypeModels': {},
 		'timeProfileTypeModels': {},
 		'timeTypepolicyModels': {}
-	}
+	};
 
-	var resArr = []
+	var resArr = [];
 
-	var deletedItems = getDeletedItems(['TIME_TYPE_NAME'], sysData, jsonInput)
+	var deletedItems = getDeletedItems(['TIME_TYPE_NAME'], sysData, jsonInput);
 	if (Delete && deletedItems.length > 0) {
 		for (var d in deletedItems) {
-			var dItem = deletedItems[d]
-			searchObj['TIME_TYPE_NAME'] = dItem['TIME_TYPE_NAME']
-			conf.Delete(searchObj, subModels)
+			var dItem = deletedItems[d];
+			searchObj['TIME_TYPE_NAME'] = dItem['TIME_TYPE_NAME'];
+			conf.Delete(searchObj, subModels);
 		}
 	}
 
-	var createdItems = getCreatedItems(['TIME_TYPE_NAME'], sysData, jsonInput)
+	var createdItems = getCreatedItems(['TIME_TYPE_NAME'], sysData, jsonInput);
 	for (var c in createdItems) {
-		var cItem = createdItems[c]
-		searchObj['TIME_TYPE_NAME'] = cItem['TIME_TYPE_NAME']
-		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, overrideExisting))
+		var cItem = createdItems[c];
+		searchObj['TIME_TYPE_NAME'] = cItem['TIME_TYPE_NAME'];
+		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, overrideExisting));
 	}
 
-	var updatedItems = getUpdatedItems(['TIME_TYPE_NAME'], sysData, jsonInput, { 'timeTypeI18NModels': 'LANG_ID' })
+	var updatedItems = getUpdatedItems(['TIME_TYPE_NAME'], sysData, jsonInput, { 'timeTypeI18NModels': 'LANG_ID' });
 	for (var u in updatedItems) {
-		var uItem = updatedItems[u]
-		searchObj['TIME_TYPE_NAME'] = uItem['TIME_TYPE_NAME']
-		var exItem = sysData.filter(function (item) { return item['TIME_TYPE_NAME'] == uItem['TIME_TYPE_NAME'] })[0]
-		uItem['timeGroupTypeModels'] = exItem['timeGroupTypeModels']
-		uItem['timeProfileTypeModels'] = exItem['timeProfileTypeModels']
-		uItem['timeTypepolicyModels'] = exItem['policyModel']
-		var policyModels = uItem['timeTypepolicyModels']
-		fillPolicyModel(policyModels, 'TimeTypeSec', 'User')
-		resArr = resArr.concat(conf.create(searchObj, uItem, subModels, overrideExisting))
+		var uItem = updatedItems[u];
+		searchObj['TIME_TYPE_NAME'] = uItem['TIME_TYPE_NAME'];
+		var exItem = sysData.filter(function (item) { return item['TIME_TYPE_NAME'] == uItem['TIME_TYPE_NAME']; })[0];
+		uItem['timeGroupTypeModels'] = exItem['timeGroupTypeModels'];
+		uItem['timeProfileTypeModels'] = exItem['timeProfileTypeModels'];
+		uItem['timeTypepolicyModels'] = exItem['policyModel'];
+		var policyModels = uItem['timeTypepolicyModels'];
+		fillPolicyModel(policyModels, 'TimeTypeSec', 'User');
+		resArr = resArr.concat(conf.create(searchObj, uItem, subModels, overrideExisting));
 	}
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
-	result["delete"] = deletedItems.length > 0
-	return result
+	var result = resArr.filter(function (r) { return r.exists == true; }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	result["delete"] = deletedItems.length > 0;
+	
+	return result;
 	//	for(var i in jsonInput){
 	//		var groups = jsonInput[i]["timeGroupModel"]
 	//		jsonInput[i]["timeGroupTypeModels"] = []
@@ -257,128 +264,213 @@ ConfigEngineAPI.updateTimeAccountTypes = function (jsonInput, overrideExisting, 
 }
 
 ConfigEngineAPI.searchTimeTypeModel = function (name, seq, ignoreSubModels) {
-	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel'
+	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel';
 
 	var searchObj = {
 		'TIME_TYPE_NAME': name ? String(name) : null,
 		'TIME_TYPE_SEQ': seq ? String(seq) : null
-	}
+	};
 
-	var resultTimeType = conf.search(searchObj, true, !ignoreSubModels, false, true)
+	var resultTimeType = conf.search(searchObj, true, !ignoreSubModels, false, true);
 
 	if (!ignoreSubModels) {
 		for (counter in resultTimeType) {
-			var seq = resultTimeType[counter]['TIME_TYPE_SEQ']
-			var policyModels = []
+			var seq = resultTimeType[counter]['TIME_TYPE_SEQ'];
+			var policyModels = [];
 
-			var policyModels = searchPolicyModel('TimeTypeSec', seq, true)
+			policyModels = searchPolicyModel('TimeTypeSec', seq, true);
 
-			resultTimeType[counter]['policyModel'] = policyModels
+			resultTimeType[counter]['policyModel'] = policyModels;
 		}
 	}
 
-	return resultTimeType
+	return resultTimeType;
 }
 
 ConfigEngineAPI.getAllTimeAccountTypes = function (ignoreSubModels) {
-	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel'
+	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel';
 
-	var searchObj = { 'auditModel': { 'REC_STATUS': 'A' } }
+	var searchObj = { 'auditModel': { 'REC_STATUS': 'A' } };
 
-	var resultTimeType = conf.search(searchObj, true, !ignoreSubModels, false, true)
+	var resultTimeType = conf.search(searchObj, true, !ignoreSubModels, false, true);
 
 	if (!ignoreSubModels) {
 		for (counter in resultTimeType) {
-			var seq = resultTimeType[counter]['TIME_TYPE_SEQ']
-			var policyModels = []
+			var seq = resultTimeType[counter]['TIME_TYPE_SEQ'];
+			var policyModels = [];
 
-			var policyModels = searchPolicyModel('TimeTypeSec', seq, true)
+			policyModels = searchPolicyModel('TimeTypeSec', seq, true);
 
-			resultTimeType[counter]['policyModel'] = policyModels
+			resultTimeType[counter]['policyModel'] = policyModels;
 		}
 	}
 
-	return resultTimeType
+	return resultTimeType;
 }
 
 ConfigEngineAPI.searchTimeTypeGroupsModel = function (name, ignoreSubModels) {
-	var resultTimeType = ConfigEngineAPI.searchTimeTypeModel(name)
+	var resultTimeType = ConfigEngineAPI.searchTimeTypeModel(name);
 
 	if (resultTimeType && resultTimeType.length > 0) {
-		return resultTimeType[0]['timeGroupModel']
+		return resultTimeType[0]['timeGroupModel'];
 	}
 
-	return null
+	return null;
 }
 
 ConfigEngineAPI.getAllTimeTypesGroupsMapping = function () {
-	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel'
-	var searchObj = { 'auditModel': { 'REC_STATUS': 'A' } }
-	var resultTimeType = conf.search(searchObj, true, true, false, true)
+	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel';
+	var searchObj = {};//{ 'auditModel': { 'REC_STATUS': 'A' } };
+	var resultTimeType = conf.search(searchObj, true, true, false, true);
 
-	var mappingResult = []
+	var mappingResult = [];
 
 	for (var t in resultTimeType) {
-		var type = resultTimeType[t]
+		var type = resultTimeType[t];
 		for (var g in type.timeGroupModel) {
-			var group = type.timeGroupModel[g]
-			group['TIME_TYPE_NAME'] = type['TIME_TYPE_NAME']
-			mappingResult.push(group)
+			var group = type.timeGroupModel[g];
+			group['TIME_TYPE_NAME'] = type['TIME_TYPE_NAME'];
+			mappingResult.push(group);
 		}
 	}
 
-	return mappingResult
+	return mappingResult;
 }
 
 ConfigEngineAPI.updateTimeTypesGroupsMapping = function (jsonInput, overrideExisting) {
+	logDebug("updateTimeTypesGroupsMapping........................");
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
 
-	var sysData = ConfigEngineAPI.getAllTimeAccountTypes(false)
+	var sysData = ConfigEngineAPI.getAllTimeAccountTypes(false);
+	var sysDataMap = {};
+	for(var sys in sysData){
+		if(!sysDataMap[sysData[sys]["TIME_TYPE_NAME"]]){
+			logDebug("Adding To sysDataMap: " + sysData[sys]["TIME_TYPE_NAME"]);
+			sysDataMap[sysData[sys]["TIME_TYPE_NAME"]] = sysData[sys]; 
+		}
+	}
 
-	var searchObj = { 'TIME_TYPE_NAME': '' }
+	var searchObj = { 'TIME_TYPE_NAME': '' };
 	var subModels = {
 		'timeTypeI18NModels': { 'ISLANG': true },
 		'timeGroupTypeModels': {},
 		'timeProfileTypeModels': {},
 		'timeTypepolicyModels': {}
+	};
+
+	var allTimeAccountGroups = ConfigEngineAPI.getAllTimeAccountGroups(false, true);
+	var groupModels = {};
+	for(var atag in allTimeAccountGroups){
+		if(!groupModels[allTimeAccountGroups[atag]["TIME_GROUP_NAME"]]){
+			groupModels[allTimeAccountGroups[atag]["TIME_GROUP_NAME"]] = allTimeAccountGroups[atag]; 
+		}
 	}
-
-	var resArr = []
-
+	
+	conf.deleteBySQL("delete from XTIME_GROUP_TYPE where 1 = ?", [1]);
+	
+	var counter = 0;
+	var sqlInsert = null;
 	for (var i in jsonInput) {
-		var groups = jsonInput[i]["timeGroupModel"]
-		jsonInput[i]["timeGroupTypeModels"] = []
-		var timeGroupTypeModels = jsonInput[i]["timeGroupTypeModels"]
-		for (var j in groups) {
-			var groupJson = groups[j]
-			var groupModels = ConfigEngineAPI.searchTimeAccountGroup(groupJson["TIME_GROUP_NAME"], null, false);
-			if (groupModels.length > 0) {
-				var groupTypeModel = { "TIME_GROUP_SEQ": groupModels[0]["TIME_GROUP_SEQ"] }
-				timeGroupTypeModels.push(groupTypeModel)
+//		var groupModel = groupModels[jsonInput[i]["timeGroupModel"][0]["TIME_GROUP_NAME"]];
+		var timeModel = sysDataMap[jsonInput[i]['TIME_TYPE_NAME']];
+		
+		var groupModelArr = jsonInput[i]["timeGroupModel"];
+		for(var gma in groupModelArr){
+			var groupModel = groupModels[groupModelArr[gma]["TIME_GROUP_NAME"]];
+			
+			if (groupModel != null && groupModel != undefined && timeModel != null && timeModel != undefined) {
+			
+				if(sqlInsert == null){
+					sqlInsert = "insert into XTIME_GROUP_TYPE ";//(SERV_PROV_CODE, TIME_GROUP_SEQ, TIME_TYPE_SEQ, REC_DATE, REC_FUL_NAM, REC_STATUS) values ";
+				}else{
+					sqlInsert += ' union all ';
+				}
+				sqlInsert += "select '" + groupModel["SERV_PROV_CODE"] + "', " + groupModel["TIME_GROUP_SEQ"] + ", " + timeModel["TIME_TYPE_SEQ"] + ", SYSDATETIME(), 'ADMIN', 'A' ";
+			
+				counter++;
+				
+				if(counter >= 1000){
+					logDebug("sqlInsert: \n" + sqlInsert);
+					
+					conf.updateBySQL(sqlInsert);
+					counter = 0;
+					
+					sqlInsert = null;
+				}
+			
+	//			sqlInsert = "insert into XTIME_GROUP_TYPE (SERV_PROV_CODE, TIME_GROUP_SEQ, TIME_TYPE_SEQ, REC_DATE, REC_FUL_NAM, REC_STATUS) values " +
+	//			"('" + groupModel["SERV_PROV_CODE"] + "', " + groupModel["TIME_GROUP_SEQ"] + ", " + timeModel["TIME_TYPE_SEQ"] + ", SYSDATETIME(), 'ADMIN', 'A') ";
+	//			
+	//			logDebug("sqlInsert: \n" + sqlInsert);
+	//			
+	//			conf.updateBySQL(sqlInsert);
 			}
 		}
-		delete jsonInput[i]["timeGroupModel"]
 	}
+	
+	logDebug("sqlInsert: \n" + sqlInsert);
+	
+	conf.updateBySQL(sqlInsert);
 
-	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel'
-
-	var updatedItems = getUpdatedItems(['TIME_TYPE_NAME'], sysData, jsonInput, { 'timeGroupTypeModels': 'TIME_GROUP_SEQ' })
-	updatedItems = updatedItems.concat(getDeletedItems(['TIME_TYPE_NAME'], sysData, jsonInput))
-
-	for (var u in updatedItems) {
-		var uItem = updatedItems[u]
-		searchObj['TIME_TYPE_NAME'] = uItem['TIME_TYPE_NAME']
-		var exItem = sysData.filter(function (item) { return item['TIME_TYPE_NAME'] == uItem['TIME_TYPE_NAME'] })[0]
-		exItem['timeGroupTypeModels'] = uItem['timeGroupTypeModels']
-		exItem['timeTypepolicyModels'] = exItem['policyModel']
-
-		resArr = resArr.concat(conf.create(searchObj, exItem, subModels, overrideExisting))
-	}
-
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
-	return result
+//	var resArr = [];
+//
+//	for (var i in jsonInput) {
+//		var groups = jsonInput[i]["timeGroupModel"];
+//		jsonInput[i]["timeGroupTypeModels"] = [];
+//		var timeGroupTypeModels = jsonInput[i]["timeGroupTypeModels"];
+//		for (var j in groups) {
+//			var groupJson = groups[j];
+////			var groupModels = ConfigEngineAPI.searchTimeAccountGroup(groupJson["TIME_GROUP_NAME"], null, false);
+//			var groupModel = groupModels[groupJson["TIME_GROUP_NAME"]];
+////			if (groupModels.length > 0) {
+//			if (groupModel != null && groupModel != undefined) {
+////				var groupTypeModel = { "TIME_GROUP_SEQ": groupModels[0]["TIME_GROUP_SEQ"] };
+//				var groupTypeModel = { "TIME_GROUP_SEQ": groupModel["TIME_GROUP_SEQ"] };
+//				
+//				timeGroupTypeModels.push(groupTypeModel);
+//			}
+//		}
+//		delete jsonInput[i]["timeGroupModel"];
+//	}
+//
+//	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel';
+//
+//	var updatedItems = getUpdatedItems(['TIME_TYPE_NAME'], sysData, jsonInput, { 'timeGroupTypeModels': 'TIME_GROUP_SEQ' });
+//	updatedItems = updatedItems.concat(getDeletedItems(['TIME_TYPE_NAME'], sysData, jsonInput));
+//
+//	var exItems = [];
+//	
+//	for (var u in updatedItems) {
+//		var uItem = updatedItems[u];
+//		searchObj['TIME_TYPE_NAME'] = uItem['TIME_TYPE_NAME'];
+////		var exItem = sysData.filter(function (item) { return item['TIME_TYPE_NAME'] == uItem['TIME_TYPE_NAME']; })[0];
+//		var exItem = sysDataMap[uItem['TIME_TYPE_NAME']];
+//		if(exItem != null && exItem != undefined){
+//			logDebug("ITEM_FOUNT## " + exItem["TIME_TYPE_NAME"]);
+//			exItem['timeGroupTypeModels'] = uItem['timeGroupTypeModels'];
+//			exItem['timeTypepolicyModels'] = exItem['policyModel'];
+//	
+////			resArr = resArr.concat(conf.create(searchObj, exItem, subModels, overrideExisting));
+//			exItems.push(exItem);
+//		}else{
+//			logDebug("ITEM_FOUNT##NOT " + exItem["TIME_TYPE_NAME"]);
+//		}
+//	}
+//	
+//	logDebug("exItems.length: " + exItems.length);
+//	logDebug("exItems: " + JSON.stringify(exItems));
+//	resArr = resArr.concat(conf.create({}, exItems, subModels, overrideExisting));
+//
+//	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	
+	var result = {
+		"success": true,
+		"exists": true
+	};
+	
+	return result;
 }
 
 ConfigEngineAPI.searchUsers = function (userName, ignoreSubModels) {
@@ -552,6 +644,7 @@ ConfigEngineAPI.updateContacts = function (jsonInput, serviceProvidorCode, overr
 	
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	
 	return result;
 	
 }
@@ -621,7 +714,7 @@ ConfigEngineAPI.updateLicensedProfessionals = function (jsonInput, serviceProvid
 	}
 	
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
 	
 	var sysData = ConfigEngineAPI.searchLicensedProfessionals(serviceProvidorCode);
@@ -704,7 +797,8 @@ ConfigEngineAPI.updateLicensedProfessionals = function (jsonInput, serviceProvid
 		resArr = resArr.concat(conf.update(searchObj, exItem, subModels, true));
 	}
 	
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	
 	return result;
 }
 
@@ -746,7 +840,7 @@ ConfigEngineAPI.searchAllPublicUsers = function(code, ignoreSubModels){
 	
 	conf.subModels = {};
 	
-//	var users = conf.search(searchObj, true, ignoreSubModels, false, false);
+	var users = conf.search(searchObj, true, ignoreSubModels, false, false);
 //	users = users.filter(function (user) {
 //		return user["USER_ID"].lastIndexOf("lamar3", 0) === 0;
 //	});
@@ -803,7 +897,7 @@ ConfigEngineAPI.updatePublicUsers = function (jsonInput, serviceProvidorCode, ov
 	}
 	
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
 	
 	var sysData = ConfigEngineAPI.searchAllPublicUsers(serviceProvidorCode, true);
@@ -1263,7 +1357,8 @@ ConfigEngineAPI.updatePublicUsers = function (jsonInput, serviceProvidorCode, ov
 	}
 
 	
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	
 	return result;
 }
 
@@ -1316,14 +1411,92 @@ ConfigEngineAPI.searchAllUsersList = function () {
 	return distinctList(lpList);
 }
 
+ConfigEngineAPI.searchUserProfile = function(code, username, ignoreSubModels){
+	logDebug('searchUserProfile.......................');
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+	
+	conf.className = "com.accela.orm.model.common.UserProfileModel";
+	
+	var searchObj = {};
+	
+	if(isNullOrEmpty(username)){
+		searchObj = {"SERV_PROV_CODE": String(code)};
+	}else{
+		searchObj = {"SERV_PROV_CODE": String(code), "USER_NAME": String(username)};
+	}
+	
+	logDebug("searchObj: " + JSON.stringify(searchObj));
+	
+	conf.subModels = {
+			
+		};
+	
+	return conf.search(searchObj, asJson, ignoreSubModels, false, true);
+}
+
+ConfigEngineAPI.createUpdateUserProfile = function(jsonInput, overrideExisting){
+	logDebug('createUpdateUserProfile.......................');
+	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
+	
+	conf.className = "com.accela.orm.model.common.UserProfileModel";
+	
+	var subModels = {
+			
+		};
+	
+	if (!Array.isArray(jsonInput)) {
+		jsonInput = [jsonInput];
+	}
+	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
+	var resArr = [];
+	
+	for(var key in jsonInput){
+		logDebug("key: " + key);
+		
+		var searchObj = {"SERV_PROV_CODE": jsonInput[key]["SERV_PROV_CODE"], "USER_NAME": jsonInput[key]["USER_NAME"], "PROFILE_SEQ_NBR": jsonInput[key]["PROFILE_SEQ_NBR"]};
+		logDebug("searchObj: " + JSON.stringify(searchObj));
+		
+		resArr = resArr.concat(conf.create(searchObj, jsonInput[key], subModels, overrideExisting));
+	}
+		
+	var searchObj = {"GUIDE_GROUP": String(jsonInput[0]["GUIDE_GROUP"])};
+	
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	archive_GITHUB("UserProfile", String(jsonInputOrg[0]["GUIDE_GROUP"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
+
+}
+
+
 ConfigEngineAPI.getAllUsers = function (ignoreSubModels) {
 	logDebug('getAllUsers.......................');
 	ignoreSubModels = ignoreSubModels == null || ignoreSubModels == undefined ? false : ignoreSubModels;
 	var userProfiles = {
-		"3": "DEFAULT_MODULE",
-		"4": "ACCESS_MODE",
-		"5": "BILLING_RATE",
-		"23": "DISP_INITIALS"
+			"1": "HOME_PAGE",
+			"3": "DEFAULT_MODULE",
+			"4": "ACCESS_MODE",
+			"5": "BILLING_RATE",
+			"7": "May Enter Time Accounting", // Y/N
+			"8": "Time Accounting Group", // null = all, id = time accounting group
+			"9": "Time Accounting Types", // 0 = "All Time Accounting Types" , 1 = "Specified Time Accounting Types"
+			"10": "Number of Days That Delete is Allowed",// MAX 999
+			"11": "Number of Days That Update is Allowed",// MAX 999
+			"12": "Hourly Rate",
+			"13": "May Modify the Logged Date", // Y/N 
+			"14": "May Modify Billable Flag", // Y/N
+			"15": "May Enter Materials And Cost",// X=Hidden Y N
+			"16": "May Enter Start/End/Elapsed Time", // 0 = "Yes" , 1 = "Elapsed Time Only"
+			"17": "May See Other User's Time Accounting", // Y/N
+			"18": "May Modify Rates and Cost",// S X Y N A
+			"19": "May Enter Vehicle and Mileage",// X Y N
+			"20": "May Delete Other User's Time Accounting", // N= No, S=Supervisor, A=Administrator
+			"21": "May Add/Modify Other User's Time Accounting", // N= No, S=Supervisor, A=Administrator
+			"23": "DISP_INITIALS",
+			"27": "May Lock Other User's Time Accounting" // N= No, S=Supervisor, A=Administrator
 	}
 	conf.className = 'com.accela.orm.model.common.UserModel'
 	var searchObj = {}
@@ -1335,7 +1508,7 @@ ConfigEngineAPI.getAllUsers = function (ignoreSubModels) {
 	var aaUsers = users.filter(function (user) {
 		var userName = user["USER_NAME"].toUpperCase();
 		return userName.lastIndexOf("PUBLICUSER", 0) !== 0;
-//		return userName.indexOf("MHASHAIKEH", 0) !== -1 || userName.indexOf("BBRILL", 0) !== -1; 
+//		return userName.indexOf("HASHAIKEH", 0) !== -1; 
 	});
 	
 	logDebug('aaUsers.length: ' + aaUsers.length);
@@ -1348,15 +1521,30 @@ ConfigEngineAPI.getAllUsers = function (ignoreSubModels) {
 		var staffsMod = conf.search(searchObj, true, true, false, true, true)
 		aaUsers[u]["staffsModel"] = staffsMod[0];
 
-		conf.className = 'com.accela.orm.model.common.UserProfileModel'
-
-		var searchObj = { "USER_NAME": aaUsers[u]["USER_NAME"] }
-		var profiles = conf.search(searchObj, true, false, false, false, false)
+		logDebug("Getting Profiles.................");
+//		conf.className = 'com.accela.orm.model.common.UserProfileModel';
+//		var searchObj = { "USER_NAME": aaUsers[u]["USER_NAME"] };
+//		var profiles = conf.search(searchObj, true, false, false, false, false);
+		var profiles = ConfigEngineAPI.searchUserProfile(aaUsers[u]["SERV_PROV_CODE"], aaUsers[u]["USER_NAME"], false);
+		logDebug("profiles.length: " + profiles.length);
+		var profs = [];
 		for (var pr in profiles) {
+			logDebug('profiles[pr]["PROFILE_SEQ_NBR"]: ' + profiles[pr]["PROFILE_SEQ_NBR"]);
 			if (userProfiles.hasOwnProperty(profiles[pr]["PROFILE_SEQ_NBR"])) {
-				aaUsers[u][userProfiles[profiles[pr]["PROFILE_SEQ_NBR"]]] = profiles[pr]["PROFILE_VALUE"]
+				logDebug("userProfiles.hasOwnProperty = true");
+				
+				var seq = profiles[pr]["PROFILE_SEQ_NBR"];
+				if(seq == '3' || seq == '4' || seq == '5' || seq == '23'){
+					aaUsers[u][userProfiles[profiles[pr]["PROFILE_SEQ_NBR"]]] = profiles[pr]["PROFILE_VALUE"];
+				}
+				delete profiles[pr]["auditModel"];
+				profs.push(profiles[pr]);
+			}else{
+				logDebug("userProfiles.hasOwnProperty = false");
 			}
 		}
+		
+		aaUsers[u]["userProfileModels"] = profs; 
 
 		var searchObj = { "USER_NAME": aaUsers[u]["USER_NAME"] }
 		var groups = ConfigEngineAPI.getUsersGroupsMapping(false, searchObj)
@@ -1384,27 +1572,29 @@ ConfigEngineAPI.getAllUsers = function (ignoreSubModels) {
 
 		var dSearchObj;
 		try{
-			dSearchObj = {
-				"R3_AGENCY_CODE": staffsMod[0]["GA_AGENCY_CODE"],
-				"R3_BUREAU_CODE": staffsMod[0]["GA_BUREAU_CODE"],
-				"R3_DIVISION_CODE": staffsMod[0]["GA_DIVISION_CODE"],
-				"R3_SECTION_CODE": staffsMod[0]["GA_SECTION_CODE"],
-				"R3_GROUP_CODE": staffsMod[0]["GA_GROUP_CODE"],
-				"R3_OFFICE_CODE": staffsMod[0]["GA_OFFICE_CODE"]
-			}
+			dSearchObj = aaUsers[u]["SERV_PROV_CODE"] + "/" + staffsMod[0]["GA_AGENCY_CODE"] + "/" + staffsMod[0]["GA_BUREAU_CODE"] + "/" + staffsMod[0]["GA_DIVISION_CODE"] + "/" + staffsMod[0]["GA_SECTION_CODE"] + "/" + staffsMod[0]["GA_GROUP_CODE"] + "/" + staffsMod[0]["GA_OFFICE_CODE"]
+//			dSearchObj = {
+//				"R3_AGENCY_CODE": staffsMod[0]["GA_AGENCY_CODE"],
+//				"R3_BUREAU_CODE": staffsMod[0]["GA_BUREAU_CODE"],
+//				"R3_DIVISION_CODE": staffsMod[0]["GA_DIVISION_CODE"],
+//				"R3_SECTION_CODE": staffsMod[0]["GA_SECTION_CODE"],
+//				"R3_GROUP_CODE": staffsMod[0]["GA_GROUP_CODE"],
+//				"R3_OFFICE_CODE": staffsMod[0]["GA_OFFICE_CODE"]
+//			}
 		}catch(e){
-			dSearchObj = {
-					"R3_AGENCY_CODE": "ADMIN",
-					"R3_BUREAU_CODE": "NA",
-					"R3_DIVISION_CODE": "NA",
-					"R3_SECTION_CODE": "NA",
-					"R3_GROUP_CODE": "NA",
-					"R3_OFFICE_CODE": "NA"
-				}
+			dSearchObj = "ADMIN/NA/NA/NA/NA/NA/NA";
+//			dSearchObj = {
+//					"R3_AGENCY_CODE": "ADMIN",
+//					"R3_BUREAU_CODE": "NA",
+//					"R3_DIVISION_CODE": "NA",
+//					"R3_SECTION_CODE": "NA",
+//					"R3_GROUP_CODE": "NA",
+//					"R3_OFFICE_CODE": "NA"
+//				}
 		}
 
-		var dept = ConfigEngineAPI.searchDepartment(dSearchObj, true)[0]
-		aaUsers[u]['DEPARTMENT'] = dept ? dept["R3_DEPTNAME"] : ""
+		var dept = ConfigEngineAPI.searchDepartment(aaUsers[u]["SERV_PROV_CODE"], dSearchObj)[0];
+		aaUsers[u]['DEPARTMENT'] = dept ? dept["R3_DEPTNAME"] : "";
 	}
 	return aaUsers
 }
@@ -1424,21 +1614,67 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 	}
 	
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
 	
 	logDebug("jsonInput:: " + JSON.stringify(stringifyJSType(jsonInput)));
 	
-	var sysData = ConfigEngineAPI.getAllUsers(false)
+	var sysData = ConfigEngineAPI.getAllUsers(false);
 
 	var searchObj = { 'USER_NAME': '' }
-
+	
 	var userProfiles = {
+		"1": "/index.cfm?fuseaction=Menu",
+		"2": "1",
 		"3": "DEFAULT_MODULE",
 		"4": "ACCESS_MODE",
 		"5": "BILLING_RATE",
-		"23": "DISP_INITIALS"
-	}
+		"6": null,
+		"7": "N",
+		"8": null,
+		"9": "0",
+		"10": "999",
+		"11": "999",
+		"12": "0.0",
+		"13": "N",
+		"14": "N",
+		"15": "X",
+		"16": "0",
+		"17": "N",
+		"18": "X",
+		"19": "X",
+		"20": "N",
+		"21": "N",
+		"23": "DISP_INITIALS",
+		"24": "N",
+		"25": null,
+		"26": "N",
+		"27": "N",
+		"28": "Y"
+	};
+
+//	var userProfiles = {//Active/InActive: 7 - 21 + 24 + 27   [A/I]
+//		"3": "DEFAULT_MODULE",
+//		"4": "ACCESS_MODE",
+//		"5": "BILLING_RATE",
+//		//"7": "May Enter Time Accounting", // Y/N
+//		//"8": "Time Accounting Group", // null = all, id = time accounting group
+//		//"9": "Time Accounting Types", // 0 = "All Time Accounting Types" , 1 = "Specified Time Accounting Types"
+//		//"10": "Number of Days That Delete is Allowed"// MAX 999
+//		//"11": "Number of Days That Update is Allowed",// MAX 999
+//		//"12": "Hourly Rate",
+//		//"13": "	May Modify the Logged Date" // Y/N 
+//		//"14", "May Modify Billable Flag", // Y/N
+//		//"15": "May Enter Materials And Cost",// X=Hidden Y N
+//		//"16": "May Enter Start/End/Elapsed Time", // 0 = "Yes" , 1 = "Elapsed Time Only"
+//		//"17": "May See Other User's Time Accounting", // Y/N
+//		//"18": "May Modify Rates and Cost",// S X Y N A
+//		//"19": "May Enter Vehicle and Mileage",// X Y N
+//		//"20": "May Delete Other User's Time Accounting", // N= No, S=Supervisor, A=Administrator
+//		//"21": "May Add/Modify Other User's Time Accounting", // N= No, S=Supervisor, A=Administrator
+//		"23": "DISP_INITIALS",
+//		//"27": "May Lock Other User's Time Accounting" // N= No, S=Supervisor, A=Administrator
+//	}
 
 	var subModels = {
 		'delegateUserModels': {},
@@ -1456,8 +1692,10 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 	logDebug("createdItems.length: " + createdItems.length);
 	
 	for (var c in createdItems) {
-		var cItem = createdItems[c]
-		searchObj['USER_NAME'] = cItem['USER_NAME']
+		var cItem = createdItems[c];
+		logDebug('cItem Before: \n' + JSON.stringify(stringifyJSType(cItem)));
+		
+		searchObj['USER_NAME'] = cItem['USER_NAME'];
 
 		cItem['GA_USER_ID'] = cItem['USER_NAME']
 		cItem['staffsModel']['USER_NAME'] = cItem['USER_NAME']
@@ -1467,16 +1705,26 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 		} else {
 			cItem["PASSWORD"] = com.accela.security.Utility().encryptPassword(cItem["PASSWORD"])
 		}
-
+		
 		// userProfileModels
-		cItem["userProfileModels"] = []
+		cItem["userProfileModels"] = [];
 		for (var pr in userProfiles) {
+			
 			var profile = {
-				"PROFILE_SEQ_NBR": pr,
-				"PROFILE_VALUE": cItem[userProfiles[pr]],
-				"USER_NAME": cItem['USER_NAME']
+					"PROFILE_SEQ_NBR": pr,
+					"PROFILE_VALUE": userProfiles[pr],
+					"USER_NAME": cItem['USER_NAME']
+				};
+			
+			if(pr == '3' || pr == '4' || pr == '5' || pr == '23'){
+				profile["PROFILE_VALUE"] = cItem[userProfiles[pr]];
+			}else{
+				if(!isEmpty(cItem['USER_PROFILE']) && !isEmpty(cItem['USER_PROFILE'][pr]) ){
+					profile["PROFILE_VALUE"] = cItem['USER_PROFILE'][pr]['PROFILE_VALUE'];
+				}
 			}
-			cItem["userProfileModels"].push(profile)
+			
+			cItem["userProfileModels"].push(profile);
 		}
 
 		// Department
@@ -1492,15 +1740,26 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 			"RIGHT_GRANTED": "Y",
 			"STATUS": "Y"
 		}
-		cItem["userSecurityModels"].push(policy)
+		cItem["userSecurityModels"].push(policy);
+		
+		logDebug('cItem After: \n' + JSON.stringify(stringifyJSType(cItem)));
 		// Do create...
-		conf.className = 'com.accela.orm.model.common.UserModel'
-		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, false))
+		conf.className = 'com.accela.orm.model.common.UserModel';
+		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, false));
 		// Update staffsModel for i18
-		updateStaffsModel(cItem['staffsModel'])
+		updateStaffsModel(cItem['staffsModel']);
+		
+		
+		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME = '" + cItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR = 28";
+		conf.updateBySQL(sql1);
+		//update Active InActive Manually
+		var activeInActive = !isNullOrEmpty(cItem['USER_PROFILE']) && !isNullOrEmpty(cItem['USER_PROFILE']['ACTIVE']) && (cItem['USER_PROFILE']['ACTIVE'] == true || cItem['USER_PROFILE']['ACTIVE'] == 'true') ? 'A' : 'I';
+		var sql = "update PUSER_PROFILE set REC_STATUS = '" + activeInActive + "' WHERE USER_NAME = '" + cItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+		conf.updateBySQL(sql);
 	}
 
-	var updatedItems = getUpdatedItems(['USER_NAME'], sysData, jsonInput, { 'staffsI18NModels': 'LANG_ID' });
+	logDebug("Going to get the updated Items..............");
+	var updatedItems = getUpdatedItems(['USER_NAME'], sysData, jsonInput, { 'staffsI18NModels': 'LANG_ID'}, ['USER_PROFILE']);
 	logDebug("updatedItems.length: " + updatedItems.length);
 	
 	for (var u in updatedItems) {
@@ -1538,12 +1797,34 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 
 
 		// userProfileModels
-		var profiles = exItem["userProfileModels"]
-		for (var pr in profiles) {
-			if (userProfiles.hasOwnProperty(profiles[pr]["PROFILE_SEQ_NBR"])) {
-				profiles[pr]["PROFILE_VALUE"] = uItem[userProfiles[profiles[pr]["PROFILE_SEQ_NBR"]]]
+//		var profiles = exItem["userProfileModels"];
+//		for (var pr in profiles) {
+//			if (userProfiles.hasOwnProperty(profiles[pr]["PROFILE_SEQ_NBR"])) {
+//				profiles[pr]["PROFILE_VALUE"] = uItem[userProfiles[profiles[pr]["PROFILE_SEQ_NBR"]]];
+//			}
+//		}
+		
+		exItem["userProfileModels"] = [];
+		for (var pr in userProfiles) {
+			
+			var profile = {
+					"PROFILE_SEQ_NBR": pr,
+					"PROFILE_VALUE": userProfiles[pr],
+					"USER_NAME": uItem['USER_NAME']
+				};
+			
+			if(pr == '3' || pr == '4' || pr == '5' || pr == '23'){
+				profile["PROFILE_VALUE"] = uItem[userProfiles[pr]];
+			}else{
+				if(!isEmpty(uItem['USER_PROFILE']) && !isEmpty(uItem['USER_PROFILE'][pr]) ){
+					profile["PROFILE_VALUE"] = uItem['USER_PROFILE'][pr]['PROFILE_VALUE'];
+				}
 			}
+			
+			exItem["userProfileModels"].push(profile);
 		}
+		
+		logDebug('exItem After:: \n' + JSON.stringify(stringifyJSType(exItem)));
 
 		logDebug('fillDepartment....................');
 		// Department
@@ -1570,9 +1851,16 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 		
 		// Do update...
 		conf.className = 'com.accela.orm.model.common.UserModel'
-		resArr = resArr.concat(conf.update(searchObj, exItem, subModels, true))
+		resArr = resArr.concat(conf.update(searchObj, exItem, subModels, true));
 		// Update staffsModel for i18
-		updateStaffsModel(uItem['staffsModel'])
+		updateStaffsModel(uItem['staffsModel']);
+		
+		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME = '" + uItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR = 28";
+		conf.updateBySQL(sql1);
+		//update Active InActive Manually
+		var activeInActive = !isNullOrEmpty(uItem['USER_PROFILE']) && !isNullOrEmpty(uItem['USER_PROFILE']['ACTIVE']) && (uItem['USER_PROFILE']['ACTIVE'] == true || uItem['USER_PROFILE']['ACTIVE'] == 'true') ? 'A' : 'I';
+		var sql = "update PUSER_PROFILE set REC_STATUS = '" + activeInActive + "' WHERE USER_NAME = '" + uItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+		conf.updateBySQL(sql);
 	}
 
 	// Update groups
@@ -1601,7 +1889,8 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 	
 	conf.updateBySQL(sql);
 
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	
 	return result;
 }
 
@@ -1749,9 +2038,9 @@ function getAgencyGroupUsers(groupNumber) {
 
 ConfigEngineAPI.updateAgencyGroups = function (jsonInput) {
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
-
+	
 	var sysData = ConfigEngineAPI.getAllAgencyGroups()
 
 	var searchObj = { 'MODULE_NAME': '', 'DISP_TEXT': '' }
@@ -1789,7 +2078,7 @@ ConfigEngineAPI.updateAgencyGroups = function (jsonInput) {
 		updateAgencyGroupUsers(exItem, users)
 	}
 
-	return { 'success': true, 'exists': false }
+	return { 'success': true, 'exists': false };
 }
 
 // Private
@@ -1821,9 +2110,9 @@ function updateUserGroups(userName, groups) {
 
 ConfigEngineAPI.updateUsersGroupsMapping = function (jsonInput, searchObj) {
 	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput]
+		jsonInput = [jsonInput];
 	}
-
+	
 	var sysData = ConfigEngineAPI.getUsersGroupsMapping(false, searchObj)
 
 	searchObj = { 'GROUP_SEQ_NBR': '', 'USER_NAME': '' }
@@ -1852,7 +2141,8 @@ ConfigEngineAPI.updateUsersGroupsMapping = function (jsonInput, searchObj) {
 		conf.className = 'com.accela.orm.model.user.UserGroupModel'
 		conf.create(searchObj, cItem, subModels, false)
 	}
-	return { 'success': true, 'exists': false }
+	
+	return { 'success': true, 'exists': false };
 }
 
 ConfigEngineAPI.searchDepartmentByDepName = function (code, ignoreSubModels) {
@@ -1913,9 +2203,7 @@ ConfigEngineAPI.getUserGroupsList = function () {
 
 	return groups
 }
-/* ------------------------------------------------------------------------------------------------------/
-    | Private methodes
-/------------------------------------------------------------------------------------------------------ */
+
 function searchPolicyModel(policyName, seq) {
 	conf.className = 'com.accela.orm.model.timeaccounting.TimeGroupSecurityModel'
 
@@ -1935,196 +2223,6 @@ function fillPolicyModel(policyModels, policyName, type) {
 		pModel['POLICY_NAME'] = policyName
 		pModel['LEVEL_TYPE'] = type
 	}
-}
-
-function getDeletedItems(keys, sysData, input) {
-	return sysData.filter(function (sysItem) {
-		return input.filter(function (inItem) {
-			exist = true
-			for (var k in keys) {
-				var key = keys[k]
-				exist = exist && (inItem[key] == sysItem[key])
-			}
-			return exist
-		}).length == 0
-	})
-}
-
-function getItemsByFilter(keys, input, filter) {
-	return input.filter(function (inItem) {
-		exist = true
-		for (var k in keys) {
-			var key = keys[k];
-			exist = exist && (inItem[key] == filter[key]);
-		}
-		return exist;
-	});
-}
-
-function getCreatedItems(keys, sysData, input) {
-	return input.filter(function (inItem) {
-		return sysData.filter(function (sysItem) {
-			exist = true
-			for (var k in keys) {
-				var key = keys[k]
-				exist = exist && (inItem[key] == sysItem[key])
-			}
-			return exist
-		}).length == 0
-	})
-}
-
-function getItemByKeyValue(sysData, key, value){
-	for(var s in sysData){
-		if(sysData[s][key] == value){
-			return sysData[s];
-		}
-	}
-	
-	return null;
-}
-
-function getExistsItems(keys, sysData, input) {
-	var existItems = input.filter(function (inItem) {
-		return sysData.filter(function (sysItem) {
-			exist = true;
-			for (var k in keys) {
-				var key = keys[k];
-				exist = exist && (inItem[key] == sysItem[key]);
-			}
-			return exist;
-		}).length > 0;
-	});
-	
-	return existItems;
-}
-
-function getUpdatedItemsByFields(keys, sysData, input, fields) {
-	var existItems = input.filter(function (inItem) {
-		return sysData.filter(function (sysItem) {
-			exist = true;
-			for (var k in keys) {
-				var key = keys[k];
-				exist = exist && (inItem[key] == sysItem[key]);
-			}
-			return exist;
-		}).length > 0;
-	})
-
-	var updatedItems = existItems.filter(function (exItem) {
-		var sysItem = sysData.filter(function (item) {
-			exist = true;
-			for (var k in keys) {
-				var key = keys[k];
-				exist = exist && (item[key] == exItem[key]);
-			}
-			return exist;
-		})[0];
-		return !compareObjectPropsByFields(exItem, sysItem, fields);
-	})
-	return updatedItems;
-}
-
-function getUpdatedItems(keys, sysData, input, subKeys) {
-	var existItems = input.filter(function (inItem) {
-		return sysData.filter(function (sysItem) {
-			exist = true;
-			for (var k in keys) {
-				var key = keys[k];
-				exist = exist && (inItem[key] == sysItem[key]);
-			}
-			return exist;
-		}).length > 0;
-	})
-
-	var updatedItems = existItems.filter(function (exItem) {
-		var sysItem = sysData.filter(function (item) {
-			exist = true;
-			for (var k in keys) {
-				var key = keys[k];
-				exist = exist && (item[key] == exItem[key]);
-			}
-			return exist;
-		})[0];
-		return !compareObjectProps(exItem, sysItem, subKeys);
-	})
-	return updatedItems;
-}
-
-function compareObjectPropsByFields(obj1, obj2, fields) {
-	obj1 = stringifyJSType(obj1);
-	obj2 = stringifyJSType(obj2);
-	
-	for (var p in obj1) {
-		if (obj2.hasOwnProperty(p) && arrayincludes(fields, p)) {
-			if (typeof obj1[p] === 'string') {
-				if (!isNaN(obj1[p]) && !isNaN(obj2[p])) {
-					if (parseFloat(obj1[p]) != parseFloat(obj2[p])){
-						return false;
-					}
-				} else {
-					if (obj1[p] != obj2[p]){
-						return false;
-					}
-				}
-			}else{
-				if (!compareObjectPropsByFields(obj1[p], obj2[p], fields)){
-					return false;
-				}
-			}
-		}
-	}
-	
-	return true;
-}
-
-function arrayincludes(array, val){
-	for(var r in array){
-		if(array[r] === val){
-			return true;
-		}
-	}
-	return false;
-}
-
-function compareObjectProps(obj1, obj2, subKeys) {
-	obj1 = stringifyJSType(obj1)
-	obj2 = stringifyJSType(obj2)
-	for (var p in obj1) {
-		if (!isNullOrEmpty(obj1[p])) {
-			if (typeof obj1[p] === 'string') {
-				if (obj2.hasOwnProperty(p)) {
-					if (!isNaN(obj1[p]) && !isNaN(obj2[p])) {
-						if (parseFloat(obj1[p]) != parseFloat(obj2[p])){
-							return false;
-						}
-					} else {
-						if (obj1[p] != obj2[p]) return false
-					}
-				}
-			} else if (Array.isArray(obj1[p])) {
-				if (subKeys[p]) {
-					if (obj1[p].length != obj2[p].length) {
-						return false;
-					} else {
-						var updated = getUpdatedItems([subKeys[p]], obj2[p], obj1[p])
-						return updated.length == 0;
-					}
-				} else {
-					return false;
-				}
-			} else {
-				if (!compareObjectProps(obj1[p], obj2[p], subKeys)){
-					return false;
-				}
-			}
-		} else {
-			if (!isNullOrEmpty(obj2[p])){
-				return false;
-			}
-		}
-	}
-	return true;
 }
 
 ConfigEngineAPI.searchCalendars = function(code, ignoreSubModels){
@@ -2206,6 +2304,7 @@ ConfigEngineAPI.updateCalendars = function(jsonInput, serviceProvidorCode, overr
 	}
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	
 	return result;
 	
 //	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
@@ -2303,6 +2402,7 @@ ConfigEngineAPI.createCondition = function(jsonInput, serviceProvidorCode, overr
 	
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	
 	return result;
 }
 
@@ -2367,9 +2467,15 @@ ConfigEngineAPI.createStandardCondition = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	var searchObj = {"SERV_PROV_CODE": String(code)};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	archive_GITHUB("StandardConditions", String(code), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.searchConditionStatus = function(code, ignoreSubModels){
@@ -2421,6 +2527,8 @@ ConfigEngineAPI.createConditionStatus = function(jsonInput, code, overrideExisti
 		jsonInput = [jsonInput];
 	}
 	
+	
+	
 	logDebug('jsonInput.length: ' + jsonInput.length);
 	
 	var sequenceGeneratorEJB = new com.accela.sequence.SequenceGeneratorEJB();
@@ -2433,7 +2541,9 @@ ConfigEngineAPI.createConditionStatus = function(jsonInput, code, overrideExisti
 	
 	var searchObj = {"SERV_PROV_CODE": String(code), "BIZDOMAIN": "CONDITION STATUS"};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.searchStandaredCondition = function(code, conditionType, ignoreSubModels){
@@ -2473,11 +2583,17 @@ ConfigEngineAPI.createStandaredCondition = function(jsonInput, code, conditionTy
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	logDebug('jsonInput.length: ' + jsonInput.length);
 	
 	var searchObj = {"SERV_PROV_CODE": String(code), "R3_CON_TYPE": String(conditionType)};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	archive_GITHUB("Standard Condition", String(conditionType), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.searchStandaredCommentsGroup = function(code, ignoreSubModels){
@@ -2645,7 +2761,8 @@ ConfigEngineAPI.createStandaredComments = function(jsonInput, code, overrideExis
 		}
 	}
 	
-	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false }
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	
 	return result;
 }
 
@@ -2679,7 +2796,9 @@ ConfigEngineAPI.createActivityType = function(jsonInput, code, overrideExisting)
 	
 	var searchObj = {"SERV_PROV_CODE": String(code)};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.searchActivitySpecificInfo = function(code, ignoreSubModels){
@@ -2706,6 +2825,7 @@ ConfigEngineAPI.searchActivitySpecificInfo = function(code, ignoreSubModels){
 }
 
 ConfigEngineAPI.createActivitySpecificInfo = function(jsonInput, overrideExisting){
+	logDebug('ConfigEngineAPI.createActivitySpecificInfo............');
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
 	
 	conf.className = "com.accela.orm.model.asi.RefAppSpecInfoFieldModel";
@@ -2726,9 +2846,16 @@ ConfigEngineAPI.createActivitySpecificInfo = function(jsonInput, overrideExistin
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	var searchObj = {"R1_CHECKBOX_CODE": String(jsonInput[0]["R1_CHECKBOX_CODE"]), "R1_CHECKBOX_GROUP": "ACTIVITY"};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	logDebug('Going to archive in GITHUB');
+	archive_GITHUB("Activity Specific Info", String(jsonInputOrg[0]["R1_CHECKBOX_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.searchSharedDropDowns = function(code, keys, ignoreSubModels){
@@ -2785,7 +2912,9 @@ ConfigEngineAPI.createSharedDropDown = function(jsonInput, overrideExisting){
 	
 	var searchObj = {"BIZDOMAIN": String(jsonInput[0]["BIZDOMAIN"])};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	
+	return result;
 
 }
 
@@ -2951,13 +3080,19 @@ ConfigEngineAPI.createAgencyI18NModels = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.OrganizationAgencyI18NModel";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("AgencyI18NModels", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createOrganizations = function(jsonInput, overrideExisting){
@@ -2979,6 +3114,8 @@ ConfigEngineAPI.createOrganizations = function(jsonInput, overrideExisting){
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
+	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	var resArr = [];
 	var skipDelete = true;
@@ -3046,6 +3183,8 @@ ConfigEngineAPI.createOrganizations = function(jsonInput, overrideExisting){
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 
+	archive_GITHUB("Organizations", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
 	return result;
 
 }
@@ -3116,13 +3255,19 @@ ConfigEngineAPI.createDdpttyI18NModels = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.DepartMentTypeI18N";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("DdpttyI18NModels", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createDepartments = function(jsonInput, overrideExisting){
@@ -3301,13 +3446,19 @@ ConfigEngineAPI.createBureauI18NModels = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.BureauI18NModel";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("BureauI18NModels", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createBureaus = function(jsonInput, overrideExisting){
@@ -3337,6 +3488,11 @@ ConfigEngineAPI.createBureaus = function(jsonInput, overrideExisting){
 	
 	for(var j in jsonInput){
 		var newSeq = null;
+		
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput[j]));//Clone Object
+		if (!Array.isArray(jsonInputOrg)) {
+			jsonInputOrg = [jsonInputOrg];
+		}
 		
 		var bureauList = ConfigEngineAPI.searchBureau(jsonInput[j]["SERV_PROV_CODE"], jsonInput[j]["R3_BUREAU_CODE"], false);
 		logDebug("Updated Bureau: " + JSON.stringify(stringifyJSType(bureauList)));
@@ -3389,7 +3545,11 @@ ConfigEngineAPI.createBureaus = function(jsonInput, overrideExisting){
 			newSeq = jsonInput[j]["RES_ID"];
 		}
 		
-		resArr = resArr.concat(conf.create(searchObj, jsonInput[j], subModels, overrideExisting, skipDelete, active));
+		var resCreate = conf.create(searchObj, jsonInput[j], subModels, overrideExisting, skipDelete, active);
+		
+		resArr = resArr.concat(resCreate);
+		
+		archive_GITHUB("Bureau", String(jsonInputOrg[0]["R3_AGENCY_CODE"]), jsonInputOrg, resCreate, overrideExisting);
 		
 		var bureauI18NModels = jsonInput[j]["bureauI18NModels"];
 		
@@ -3407,6 +3567,8 @@ ConfigEngineAPI.createBureaus = function(jsonInput, overrideExisting){
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 
+	
+	
 	return result;
 
 }
@@ -3525,13 +3687,19 @@ ConfigEngineAPI.createDivisionI18NModels = function(jsonInput, overrideExisting)
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.DivisionI18NModel";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("DivisionI18NModels", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createDivisions = function(jsonInput, overrideExisting){
@@ -3554,6 +3722,8 @@ ConfigEngineAPI.createDivisions = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	var resArr = [];
 	var skipDelete = true;
 	
@@ -3561,6 +3731,8 @@ ConfigEngineAPI.createDivisions = function(jsonInput, overrideExisting){
 	
 	for(var j in jsonInput){
 		var newSeq = null;
+		
+		
 		
 		var divisionList = ConfigEngineAPI.searchDivision(jsonInput[j]["SERV_PROV_CODE"], jsonInput[j]["R3_DIVISION_CODE"], false);
 		logDebug("Updated Division: " + JSON.stringify(stringifyJSType(divisionList)));
@@ -3615,8 +3787,11 @@ ConfigEngineAPI.createDivisions = function(jsonInput, overrideExisting){
 		
 		logDebug("jsonInput[j] With SEQ:: " + JSON.stringify(stringifyJSType(jsonInput[j])));
 		
-		resArr = resArr.concat(conf.create(searchObj, jsonInput[j], subModels, overrideExisting, skipDelete, active));
+		var resCreate = conf.create(searchObj, jsonInput[j], subModels, overrideExisting, skipDelete, active);
+		resArr = resArr.concat(resCreate);
 		logDebug("resArr:: " + JSON.stringify(stringifyJSType(resArr)));
+		
+		
 		
 		var divisionI18NModels = jsonInput[j]["divisionI18NModels"];
 		
@@ -3636,6 +3811,8 @@ ConfigEngineAPI.createDivisions = function(jsonInput, overrideExisting){
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 
+	archive_GITHUB("Division", String(jsonInputOrg[0]["R3_AGENCY_CODE"]), jsonInputOrg, result, overrideExisting);
+	
 	return result;
 
 }
@@ -3754,13 +3931,19 @@ ConfigEngineAPI.createWsectinI18NModels = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.wsectinI18NModels";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("SectinI18NModels", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createSections = function(jsonInput, overrideExisting){
@@ -3782,6 +3965,8 @@ ConfigEngineAPI.createSections = function(jsonInput, overrideExisting){
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
+	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	var resArr = [];
 	var skipDelete = true;
@@ -3865,6 +4050,8 @@ ConfigEngineAPI.createSections = function(jsonInput, overrideExisting){
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 
+	archive_GITHUB("Section", String(jsonInputOrg[0]["R3_AGENCY_CODE"]), jsonInputOrg, result, overrideExisting);
+	
 	return result;
 
 }
@@ -3983,13 +4170,19 @@ ConfigEngineAPI.createOrganizationGroupI18NModel = function(jsonInput, overrideE
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.OrganizationGroupI18NModel";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("OrganizationGroupI18NModel", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createGroups = function(jsonInput, overrideExisting){
@@ -4011,6 +4204,8 @@ ConfigEngineAPI.createGroups = function(jsonInput, overrideExisting){
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
+	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	var resArr = [];
 	var skipDelete = true;
@@ -4094,6 +4289,8 @@ ConfigEngineAPI.createGroups = function(jsonInput, overrideExisting){
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 
+	archive_GITHUB("Group", String(jsonInputOrg[0]["R3_AGENCY_CODE"]), jsonInputOrg, result, overrideExisting);
+	
 	return result;
 
 }
@@ -4212,13 +4409,19 @@ ConfigEngineAPI.createOfficeI18NModels = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	
 	conf.className = "com.accela.orm.model.user.OfficeI18NModel";
 	
 	var searchObj = {"SERV_PROV_CODE": jsonInput[0]["SERV_PROV_CODE"], "LANG_ID": jsonInput[0]["LANG_ID"], "RES_ID": jsonInput[0]["RES_ID"]};
 	
 	conf.subModels = {};
 	
-	return conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting, false);
+	
+	archive_GITHUB("OfficeI18NModels", String(jsonInputOrg[0]["SERV_PROV_CODE"]), jsonInputOrg, result, overrideExisting);
+	
+	return result;
 }
 
 ConfigEngineAPI.createOffices = function(jsonInput, overrideExisting){
@@ -4240,6 +4443,8 @@ ConfigEngineAPI.createOffices = function(jsonInput, overrideExisting){
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
+	
+	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	var resArr = [];
 	var skipDelete = true;
@@ -4323,6 +4528,8 @@ ConfigEngineAPI.createOffices = function(jsonInput, overrideExisting){
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 
+	archive_GITHUB("Office", String(jsonInputOrg[0]["R3_AGENCY_CODE"]), jsonInputOrg, result, overrideExisting);
+	
 	return result;
 
 }
@@ -4501,14 +4708,15 @@ ConfigEngineAPI.createOffice = function(jsonInput, overrideExisting){
 
 function printJson(title, json){
 	try{
-		logDebug(title + ": " + JSON.stringify(json));
+		logDebug(title + "1: " + JSON.stringify(json));
 	}catch(e){
-		logDebug(title + ": " + json);
+		logDebug(title + "2: " + json);
 	}
 }
 
 //var jsonInput = [{"USER_NAME":"VELOSIMO","PASSWORD":"","ACCOUNT_DISABLE_PERIOD":"999","ALLOW_USER_CHANGE_PASSWORD":"Y","CASHIER_ID":"","CHANGE_PASSWORD_NEXT_LOGIN":"N","DAILY_INSP_UNITS":"","DISTINGUISH_NAME":"","EMPLOYEE_ID":"","INSPECTOR_STATUS":"","LOCKED":"N","GROUPS":"Building::Admin","PASSWORD_EXPIRE_TIMEFRAME":"999","SECTION_508_FLAG":"","STATUS":"DISABLE","SUPERVISOR_FLAG":"","ACCESS_MODE":"","BILLING_RATE":"","AGIS":"N","AMO":"N","AW":"N","DUMMYUSER":"N","DISP_INITIALS":"","DEPARTMENT":"Building Department","DEFAULT_MODULE":"Building","staffsModel":{"GA_EMAIL":"","GA_EMPLOY_PH1":"","GA_PREFERRED_CHANNEL":"","GA_TITLE":"","GA_FNAME":"","GA_MNAME":"","GA_LNAME":"","GA_INITIAL":"","GA_USER_ID":"VELOSIMO","staffsI18NModels":[]},"DISP_NAME":"","FNAME":"","GA_USER_ID":"VELOSIMO","LNAME":"","MNAME":""}];
 //var result = ConfigEngineAPI.getAllUsers(false); 
+//pm(result, true);
 //var result = '';
 //try{
 //	result = ConfigEngineAPI.updateUsers(jsonInput, 'PS05', true);
@@ -4524,7 +4732,7 @@ function printJson(title, json){
 //var result = ConfigEngineAPI.searchCalendars('ADMA', false);
 //var result = ConfigEngineAPI.updateCalendars(jsonInput, 'ADMA', true);
 
-//var jsonInput = ConfigEngineAPI.searchPublicUsers();
+//var jsonInput = ConfigEngineAPI.searchPublicUsers('ADMA');
 //aa.print(ConfigEngineAPI.getContactNameById('666'));
 
 //................................................
@@ -4788,9 +4996,9 @@ function printJson(title, json){
 //var result = ConfigEngineAPI.createActivityType(jsonInput, 'ADMA', true);
 //var result = ConfigEngineAPI.searchActivitySpecificInfo('CORE_ACT_AUT', false);
 
+//var result = ConfigEngineAPI.searchUserProfile("ADMA", "MHASHAIKEH", true);
 
-
-//var keys = ["SD_CITY","City"];
+//var keys = ["ADMA","CONTACT TYPE"];
 //var result = ConfigEngineAPI.searchSharedDropDowns("ADMA", keys, true);
 //var result = ConfigEngineAPI.searchSharedDropDowns("ADMA", [], true);
 
@@ -4798,6 +5006,10 @@ function printJson(title, json){
 //var result = ConfigEngineAPI.createRenewalInfo(jsonInput, true);
 
 //var result = ConfigEngineAPI.searchFeeItemsList("ADMA", true);
+
+//var result = ConfigEngineAPI.getAllTimeAccountGroups(false, true);
+//var result = ConfigEngineAPI.searchTimeAccountGroup('TAG_001', null);
+//var result = ConfigEngineAPI.getAllTimeTypesGroupsMapping();
 
 //var result = ConfigEngineAPI.searchDepartments("ADMA", true);
 //var result = ConfigEngineAPI.searchDepartment("ADMA", "ADMA/AA/HASHB/HDEV/HSEC/HGRP/HASHOFFC", true);
@@ -4814,7 +5026,8 @@ function printJson(title, json){
 //var result = ConfigEngineAPI.searchReports("ADMA", true);
 
 //aa.print('result.length: ' + result.length);
-//aa.print('result: ' + result);
+//aa.print('Result:: ' + result);
+//aa.print('Result: \n' + JSON.stringify(stringifyJSType(result)));
 
 //aa.print('Result: \n' + JSON.stringify(result));
 
