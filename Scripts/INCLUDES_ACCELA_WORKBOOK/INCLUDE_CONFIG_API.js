@@ -227,8 +227,6 @@ ConfigEngineAPI.createASI = function(jsonInput, overrideExisting, addOnly){
 	logDebug("createASII................................");
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
 	
-	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
-	
 	conf.className = "com.accela.orm.model.asi.RefAppSpecInfoFieldModel";
 	
 	var subModels = {
@@ -242,13 +240,32 @@ ConfigEngineAPI.createASI = function(jsonInput, overrideExisting, addOnly){
 		jsonInput = [jsonInput];
 	}
 	
-	var searchObj = {"R1_CHECKBOX_CODE": String(jsonInput[0]["R1_CHECKBOX_CODE"]), "R1_CHECKBOX_GROUP": "APPLICATION"};
+	var jsonMap = {};
+	for(var item in jsonInput){
+		if(jsonMap[ jsonInput[item]["R1_CHECKBOX_CODE"] ] ){
+			jsonMap[ jsonInput[item]["R1_CHECKBOX_CODE"] ].push(jsonInput[item]);
+		}else{
+			jsonMap[ jsonInput[item]["R1_CHECKBOX_CODE"] ] = [jsonInput[item]];
+		}
+	}
 	
-	var result;
-	if(addOnly){
-		result = conf.create(searchObj, jsonInput, subModels, overrideExisting, true);
-	}else{
-		result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var resArr = [];
+	
+	for(var key in jsonMap){
+		var searchObj = {"R1_CHECKBOX_CODE": String(key), "R1_CHECKBOX_GROUP": "APPLICATION"};
+		
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonMap[key]));//Clone Object
+		
+		
+		var result;
+		if(addOnly){
+			result = conf.create(searchObj, jsonMap[key], subModels, overrideExisting, true);
+		}else{
+			result = conf.create(searchObj, jsonMap[key], subModels, overrideExisting);
+		}
+		resArr = resArr.concat(result);
+		
+		archive_GITHUB("Custom Fields", String(key), jsonInputOrg, result, overrideExisting);
 	}
 	
 	var sql1 = "update R2CHCKBOX set R1_CHECKBOX_DESC_ALIAS = ? where SERV_PROV_CODE = ? and R1_CHECKBOX_CODE = ? and R1_CHECKBOX_DESC = ?";
@@ -257,26 +274,29 @@ ConfigEngineAPI.createASI = function(jsonInput, overrideExisting, addOnly){
 	var params = [];
 	
 	for(var j in jsonInput){
-		params = [String(jsonInput[j]["FIELD_ALIAS_ENGLISH"]), String(jsonInput[j]["SERV_PROV_CODE"]), String(jsonInput[j]["R1_CHECKBOX_CODE"]), String(jsonInput[j]["R1_CHECKBOX_DESC"])];
+		var enAlias = String(jsonInput[j]["FIELD_ALIAS_ENGLISH"]);
+		enAlias = enAlias == null || enAlias == "null" || enAlias == undefined || enAlias == "undefined" ? "" : enAlias;
+		
+		var arAlias = String(jsonInput[j]["FIELD_ALIAS_SECLANG"]);
+		arAlias = arAlias == null || arAlias == "null" || arAlias == undefined || arAlias == "undefined" ? "" : arAlias;
+		
+		params = [enAlias, String(jsonInput[j]["SERV_PROV_CODE"]), String(jsonInput[j]["R1_CHECKBOX_CODE"]), String(jsonInput[j]["R1_CHECKBOX_DESC"])];
 		conf.updateBySQL(sql1, params);
 		
 		try{
-		params = [String(jsonInput[j]["FIELD_ALIAS_ENGLISH"]), String(jsonInput[j]["SERV_PROV_CODE"]), String(jsonInput[j]["R1_CHECKBOX_CODE"]), String(jsonInput[j]["R1_CHECKBOX_DESC"]), String(jsonInput[j]["refAppSpecInfoFieldI18NModels"][1]["LANG_ID"])];
-		conf.updateBySQL(sql2, params);
+			params = [enAlias, String(jsonInput[j]["SERV_PROV_CODE"]), String(jsonInput[j]["R1_CHECKBOX_CODE"]), String(jsonInput[j]["R1_CHECKBOX_DESC"]), String(jsonInput[j]["refAppSpecInfoFieldI18NModels"][1]["LANG_ID"])];
+			conf.updateBySQL(sql2, params);
 		}catch(e){
-//			logDebug("ERRRRR1: " + e);
 		}
 		
 		try{
-		params = [String(jsonInput[j]["FIELD_ALIAS_SECLANG"]), String(jsonInput[j]["SERV_PROV_CODE"]), String(jsonInput[j]["R1_CHECKBOX_CODE"]), String(jsonInput[j]["R1_CHECKBOX_DESC"]), String(jsonInput[j]["refAppSpecInfoFieldI18NModels"][0]["LANG_ID"])];
-		conf.updateBySQL(sql2, params);
+			params = [arAlias, String(jsonInput[j]["SERV_PROV_CODE"]), String(jsonInput[j]["R1_CHECKBOX_CODE"]), String(jsonInput[j]["R1_CHECKBOX_DESC"]), String(jsonInput[j]["refAppSpecInfoFieldI18NModels"][0]["LANG_ID"])];
+			conf.updateBySQL(sql2, params);
 		}catch(e){
-//			logDebug("ERRRRR2: " + e);
 		}
 	}
 	
-	archive_GITHUB("Custom Fields", String(jsonInputOrg[0]["R1_CHECKBOX_CODE"]), jsonInputOrg, result, overrideExisting);
-	
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 	
 	return result;
 }
@@ -379,10 +399,29 @@ ConfigEngineAPI.searchFeesSchedule = function(code, ignoreSubModels){
 	return conf.search(searchObj, asJson, ignoreSubModels, false, true);
 }
 
+ConfigEngineAPI.searchAllFeesSchedule = function(code, ignoreSubModels){
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+	
+	conf.className = "com.accela.orm.model.finance.RefFeeScheduleModel";
+	
+	var searchObj = {"SERV_PROV_CODE":String(code)};
+	
+	conf.subModels = {
+			"feeScheduleI18NModels":{},
+			"feeItems":{
+				"feeItemI18NModels":{}
+//				"unitDescModel":{}
+			}
+		};
+	
+	return conf.search(searchObj, asJson, ignoreSubModels, false, true);
+}
+
 ConfigEngineAPI.createFeesSchedule = function(jsonInput, overrideExisting){
+//	timeDebug("createFeesSchedule:Start");
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
 	
-	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
+	var jsonInputOrgBase = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	conf.className = "com.accela.orm.model.finance.RefFeeScheduleModel";
 	
@@ -394,15 +433,40 @@ ConfigEngineAPI.createFeesSchedule = function(jsonInput, overrideExisting){
 			}
 		};
 	
+	var resArr = [];
+	
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
 	
-	var searchObj = {"FEE_SCHEDULE_NAME":String(jsonInput[0]["FEE_SCHEDULE_NAME"])};
+	var searchObj = {};
 	
-	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+//	for(var j in jsonInput){
+//		var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput[j]));//Clone Object
+//		
+//		searchObj = {"FEE_SCHEDULE_NAME":String(jsonInput[j]["FEE_SCHEDULE_NAME"])};
+//		
+//		var createResult = conf.create(searchObj, [jsonInput[j]], subModels, overrideExisting);
+//		resArr = resArr.concat(createResult);
+//		archive_GITHUB("Fees", String(jsonInputOrg["FEE_SCHEDULE_NAME"]), [jsonInputOrg], createResult, overrideExisting);
+//	}
 	
-	archive_GITHUB("Fees", String(jsonInputOrg[0]["FEE_SCHEDULE_NAME"]), jsonInputOrg, result, overrideExisting);
+	for(var jd in jsonInput){
+		searchObj = {"FEE_SCHEDULE_NAME":String(jsonInput[jd]["FEE_SCHEDULE_NAME"])};
+		
+		conf.findAndDelete(searchObj, subModels, overrideExisting);
+	}
+	
+	var result = conf.create("BATCH", jsonInput, subModels, overrideExisting);
+	
+	for(var jg in jsonInputOrgBase){
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonInputOrgBase[jg]));//Clone Object
+		
+		archive_GITHUB("Fees", String(jsonInputOrg["FEE_SCHEDULE_NAME"]), [jsonInputOrg], result, overrideExisting);
+	}
+	
+//	timeDebug("createFeesSchedule:END");// 2906ms   //2455ms
+	
 	
 	return result;
 }
@@ -444,9 +508,8 @@ ConfigEngineAPI.searchApplicationType = function(code, ignoreSubModels){
 }
 
 ConfigEngineAPI.createApplicationType = function(jsonInput, overrideExisting){
+	logDebug("createApplicationType.......................................");
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
-	
-	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	conf.className = "com.accela.orm.model.cap.CapTypeModel";
 	
@@ -463,17 +526,109 @@ ConfigEngineAPI.createApplicationType = function(jsonInput, overrideExisting){
 	}
 	
 	var searchObj = {
-			"R1_PER_GROUP": String(jsonInput[0]["R1_PER_GROUP"]),
-			"R1_PER_TYPE": String(jsonInput[0]["R1_PER_TYPE"]),
-			"R1_PER_SUB_TYPE": String(jsonInput[0]["R1_PER_SUB_TYPE"]),
-			"R1_PER_CATEGORY":  String(jsonInput[0]["R1_PER_CATEGORY"])
+			"R1_PER_GROUP": "",
+			"R1_PER_TYPE": "",
+			"R1_PER_SUB_TYPE": "",
+			"R1_PER_CATEGORY":  ""
 	};
 	
 	
-	var result = conf.createOrUpdate(searchObj, jsonInput, subModels, overrideExisting);
+	var resArr = [];
 	
-	archive_GITHUB("Application Type", String(jsonInputOrg[0]["R1_PER_GROUP"]) + "_" + String(jsonInputOrg[0]["R1_PER_TYPE"]) + "_" + String(jsonInputOrg[0]["R1_PER_SUB_TYPE"]) + "_" + String(jsonInputOrg[0]["R1_PER_CATEGORY"]), jsonInputOrg, result, overrideExisting);
-	
+	for(var j in jsonInput){
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput[j]));//Clone Object
+		
+		var capTypeMaskModel = jsonInput[j]["capTypeMaskModel"];
+		if(capTypeMaskModel == null || capTypeMaskModel == undefined){
+			capTypeMaskModel = {
+				"PAR_CAP_MASK_NAME": "",
+				"TMP_CAP_MASK_NAME": "",
+				"CAPKEY_MASK_NAME": "",
+				"CAP_MASK_NAME": "",//
+				"R1_ALT_MASK_1": "",
+				"R1_RECEIPT_NBR_SCHEME": "",
+				"RECEIPT_MASK_NAME": ""
+			};
+			
+			jsonInput[j]["capTypeMaskModel"] = capTypeMaskModel;
+		}
+		
+		var PAR_CAP_MASK_NAME = String(jsonInput[j]["capTypeMaskModel"]["PAR_CAP_MASK_NAME"]);
+		PAR_CAP_MASK_NAME = isNullUndefinedEmpty(PAR_CAP_MASK_NAME) ? "Default" : PAR_CAP_MASK_NAME;
+		jsonInput[j]["capTypeMaskModel"]["PAR_CAP_MASK_NAME"] = PAR_CAP_MASK_NAME;
+		
+		var TMP_CAP_MASK_NAME = String(jsonInput[j]["capTypeMaskModel"]["TMP_CAP_MASK_NAME"]);
+		TMP_CAP_MASK_NAME = isNullUndefinedEmpty(TMP_CAP_MASK_NAME) ? "Default" : TMP_CAP_MASK_NAME;
+		jsonInput[j]["capTypeMaskModel"]["TMP_CAP_MASK_NAME"] = TMP_CAP_MASK_NAME;
+		
+		var CAPKEY_MASK_NAME = String(jsonInput[j]["capTypeMaskModel"]["CAPKEY_MASK_NAME"]);
+		CAPKEY_MASK_NAME = isNullUndefinedEmpty(CAPKEY_MASK_NAME) ? "Default" : CAPKEY_MASK_NAME;
+		jsonInput[j]["capTypeMaskModel"]["CAPKEY_MASK_NAME"] = CAPKEY_MASK_NAME;
+		
+		var CAP_MASK_NAME = String(jsonInput[j]["capTypeMaskModel"]["CAP_MASK_NAME"]);
+		CAP_MASK_NAME = isNullUndefinedEmpty(CAP_MASK_NAME) ? "Default" : CAP_MASK_NAME;
+		jsonInput[j]["capTypeMaskModel"]["CAP_MASK_NAME"] = CAP_MASK_NAME;
+		
+		var R1_ALT_MASK_1 = String(jsonInput[j]["capTypeMaskModel"]["R1_ALT_MASK_1"]);
+		R1_ALT_MASK_1 = isNullUndefinedEmpty(R1_ALT_MASK_1) ? "" : R1_ALT_MASK_1;
+		jsonInput[j]["capTypeMaskModel"]["R1_ALT_MASK_1"] = R1_ALT_MASK_1;
+		
+		var R1_RECEIPT_NBR_SCHEME = String(jsonInput[j]["capTypeMaskModel"]["R1_RECEIPT_NBR_SCHEME"]);
+		R1_RECEIPT_NBR_SCHEME = isNullUndefinedEmpty(R1_RECEIPT_NBR_SCHEME) ? "" : R1_RECEIPT_NBR_SCHEME;
+		jsonInput[j]["capTypeMaskModel"]["R1_RECEIPT_NBR_SCHEME"] = R1_RECEIPT_NBR_SCHEME;
+		
+		var RECEIPT_MASK_NAME = String(jsonInput[j]["capTypeMaskModel"]["RECEIPT_MASK_NAME"]);
+		RECEIPT_MASK_NAME = isNullUndefinedEmpty(RECEIPT_MASK_NAME) ? "" : RECEIPT_MASK_NAME;
+		jsonInput[j]["capTypeMaskModel"]["RECEIPT_MASK_NAME"] = RECEIPT_MASK_NAME;
+
+		logDebug('jsonInput['+j+']: ' + JSON.stringify(jsonInput[j]));
+		
+		var connectWithPF = false;
+		try{
+			logDebug("isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])::: " + isEmpty(jsonInput[j]['R1_SMARTCHOICE_CODE_FOR_ACA']));
+			if(!isEmpty(jsonInput[j]['R1_SMARTCHOICE_CODE_FOR_ACA'])){
+				connectWithPF = true;
+			}
+		}catch(e){
+			logDebug("ERR:R1_SMARTCHOICE_CODE_FOR_ACA: " + e);
+		}
+		
+		searchObj = {
+				"R1_PER_GROUP": String(jsonInput[j]["R1_PER_GROUP"]),
+				"R1_PER_TYPE": String(jsonInput[j]["R1_PER_TYPE"]),
+				"R1_PER_SUB_TYPE": String(jsonInput[j]["R1_PER_SUB_TYPE"]),
+				"R1_PER_CATEGORY":  String(jsonInput[j]["R1_PER_CATEGORY"])
+		};
+		logDebug('searchObj: ' + JSON.stringify(searchObj));
+		
+		try{
+			var resultCreate = conf.createOrUpdate(searchObj, jsonInput[j], subModels, overrideExisting);
+			logDebug('resultCreate: ' + JSON.stringify(resultCreate));
+			resArr = resArr.concat(resultCreate);
+		}catch(er){
+			logDebug('Error::: ' + er);
+			
+			var error = "";
+			if (er.getMessage) {
+				error = er.getMessage();
+			} else {
+				error = er + "";
+			}
+			
+			if(error == 'ALIAS_DUPLICATED'){
+				throw 'Alias [' + jsonInput[j]['R1_APP_TYPE_ALIAS'] + '] already exists in the database';
+			}
+		}
+		
+		if(overrideExisting == true && connectWithPF == true && resultCreate['success'] == true && resultCreate['exists'] == false){
+			logDebug("Going to connect the PageFlow with ApplicationType");
+			ConfigEngineAPI.connectAppTypeWithPF(jsonInput[j]['SERV_PROV_CODE'], jsonInput[j]['R1_SMARTCHOICE_CODE_FOR_ACA'], jsonInput[j]['R1_PER_GROUP'], jsonInput[j]['R1_PER_TYPE'], jsonInput[j]['R1_PER_SUB_TYPE'], jsonInput[j]['R1_PER_CATEGORY']);
+		}
+		
+		archive_GITHUB("Application Type", String(jsonInputOrg["R1_PER_GROUP"]) + "_" + String(jsonInputOrg["R1_PER_TYPE"]) + "_" + String(jsonInputOrg["R1_PER_SUB_TYPE"]) + "_" + String(jsonInputOrg["R1_PER_CATEGORY"]), jsonInputOrg, resultCreate, overrideExisting);
+	}
+
+	var result = resArr.filter(function (r) { return r.exists == true; }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 	return result;
 }
 
@@ -593,9 +748,8 @@ ConfigEngineAPI.searchASIT = function(code, ignoreSubModels){
 }
 
 ConfigEngineAPI.createASIT = function(jsonInput, overrideExisting){
+	timeDebug("createASIT:START");
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
-	
-	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	conf.className = "com.accela.orm.model.asi.RefAppSpecInfoFieldModel";
 	
@@ -615,9 +769,27 @@ ConfigEngineAPI.createASIT = function(jsonInput, overrideExisting){
 		jsonInput = [jsonInput];
 	}
 	
-	var searchObj = {"R1_CHECKBOX_CODE": String(jsonInput[0]["R1_CHECKBOX_CODE"]), "R1_CHECKBOX_GROUP": "FEEATTACHEDTABLE"};
+	var jsonMap = {};
+	for(var item in jsonInput){
+		if(jsonMap[ jsonInput[item]["R1_CHECKBOX_CODE"] ] ){
+			jsonMap[ jsonInput[item]["R1_CHECKBOX_CODE"] ].push(jsonInput[item]);
+		}else{
+			jsonMap[ jsonInput[item]["R1_CHECKBOX_CODE"] ] = [jsonInput[item]];
+		}
+	}
 	
-	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var resArr = [];
+	
+	for(var key in jsonMap){
+		var searchObj = {"R1_CHECKBOX_CODE": String(key), "R1_CHECKBOX_GROUP": "FEEATTACHEDTABLE"};
+		
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonMap[key]));//Clone Object
+		
+		var result = conf.create(searchObj, jsonMap[key], subModels, overrideExisting);
+		resArr = resArr.concat(result);
+		
+		archive_GITHUB("Custom Tables", String(key), jsonInputOrg, result, overrideExisting);
+	}
 	
 	var sql1 = "update R2CHCKBOX set R1_CHECKBOX_DESC_ALIAS = ? where SERV_PROV_CODE = ? and R1_CHECKBOX_CODE = ? and R1_CHECKBOX_DESC = ?";
 	var sql2 = "update R2CHCKBOX_I18N set R1_CHECKBOX_DESC_ALIAS = ? where RES_ID IN (SELECT RES_ID FROM R2CHCKBOX where SERV_PROV_CODE = ? and R1_CHECKBOX_CODE = ? and R1_CHECKBOX_DESC = ?) AND LANG_ID = ?";
@@ -643,8 +815,8 @@ ConfigEngineAPI.createASIT = function(jsonInput, overrideExisting){
 		}
 	}
 
-	archive_GITHUB("Custom Tables", String(jsonInputOrg[0]["R1_CHECKBOX_CODE"]), jsonInputOrg, result, overrideExisting);
-	
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	timeDebug("createASIT:END");
 	return result;
 }
 
@@ -683,6 +855,22 @@ ConfigEngineAPI.searchSharedDropDown = function(code, ignoreSubModels){
 		};
 	
 	return conf.search(searchObj, asJson, ignoreSubModels, false, true);
+}
+
+ConfigEngineAPI.searchSharedDropDownValues = function(code, ignoreSubModels){
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+	
+	var result = ConfigEngineAPI.searchSharedDropDown(code, ignoreSubModels);
+	
+	var results = [];
+	for(var r in result){
+		var models = result[r]['sharedDropDownValueModels'];
+		for(var m in models){
+			results.push(models[m]['BIZDOMAIN_VALUE']);
+		}
+	}
+	
+	return results;
 }
 
 ConfigEngineAPI.searchSharedDropDownList = function(code){
@@ -944,6 +1132,35 @@ ConfigEngineAPI.createSmartChoiceOptions = function(jsonInput, overrideExisting)
 
 }
 
+ConfigEngineAPI.searchPageFlowList = function(code, ignoreSubModels){
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+	
+	conf.className = "com.accela.orm.model.pageflow.PageFlowModel";
+	
+	var searchObj = {"SERV_PROV_CODE": String(code)};
+	
+	conf.subModels = {
+			"stepModels": {
+				"pageModels": {
+					"pageComponentModels": {
+						"componentModel": {},
+						"pageComponentI18NModels": {}
+					},
+					"pageI18NModels": {}
+				},
+				"stepI18NModels": {}
+			}
+		};
+	
+	var pfList = conf.search(searchObj, asJson, ignoreSubModels, false, true);
+	
+	pfList = pfList.map(function (pf) {
+		return pf["PF_GROUP_CODE"];
+	});
+	
+	return distinctList(pfList);
+}
+
 ConfigEngineAPI.searchPageFlow = function(code, ignoreSubModels){
 	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
 	
@@ -1042,9 +1259,8 @@ ConfigEngineAPI.searchInspectionCodeList = function(code, ignoreSubModels){
 }
 
 ConfigEngineAPI.createInspectionGroupModel = function(jsonInput, overrideExisting){
+	logDebug("createInspectionGroupModel:Start");
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
-	
-	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	conf.className = "com.accela.orm.model.inspection.InspectionTypeModel";
 	
@@ -1059,12 +1275,30 @@ ConfigEngineAPI.createInspectionGroupModel = function(jsonInput, overrideExistin
 		jsonInput = [jsonInput];
 	}
 	
-	var searchObj = {"INSP_CODE": String(jsonInput[0]["INSP_CODE"])};
+	var jsonMap = {};
 	
-//	return conf.createOrUpdate(searchObj, jsonInput, subModels, overrideExisting);
-	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
-
-	archive_GITHUB("Inspection Group", String(jsonInputOrg[0]["INSP_CODE"]), jsonInputOrg, result, overrideExisting);
+	for(var j in jsonInput){
+		if(jsonMap[ jsonInput[j]["INSP_CODE"] ] ){
+			jsonMap[ jsonInput[j]["INSP_CODE"] ].push(jsonInput[j]);
+		}else{
+			jsonMap[ jsonInput[j]["INSP_CODE"] ] = [jsonInput[j]];
+		}
+	}
+	
+	var resArr = [];
+	for(var key in jsonMap){
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonMap[key]));//Clone Object
+		
+		var searchObj = {"INSP_CODE": String(key)};
+		
+		var createRes = conf.create(searchObj, jsonMap[key], subModels, overrideExisting);
+		resArr = resArr.concat(createRes);
+	
+		archive_GITHUB("Inspection Group", String(jsonInputOrg[0]["INSP_CODE"]), jsonInputOrg, createRes, overrideExisting);
+	}
+	
+	var result = resArr.filter(function (r) { return r.exists == true; }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	logDebug("createInspectionGroupModel:END");//49279ms
 	
 	return result;
 }
@@ -1108,8 +1342,6 @@ ConfigEngineAPI.searchInspectionResultGroupList = function(code, ignoreSubModels
 ConfigEngineAPI.createInspectionResultGroupModel = function(code, jsonInput, overrideExisting){
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
 	
-	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
-	
 	conf.className = "com.accela.orm.model.inspection.InspectionResultGroupModel";
 	
 	var subModels = {
@@ -1121,12 +1353,28 @@ ConfigEngineAPI.createInspectionResultGroupModel = function(code, jsonInput, ove
 		jsonInput = [jsonInput];
 	}
 	
-	var searchObj = {"INSP_RESULT_GROUP": String(code)};
+	var jsonMap = {};
+	for(var item in jsonInput){
+		if(jsonMap[ jsonInput[item]["INSP_RESULT_GROUP"] ] ){
+			jsonMap[ jsonInput[item]["INSP_RESULT_GROUP"] ].push(jsonInput[item]);
+		}else{
+			jsonMap[ jsonInput[item]["INSP_RESULT_GROUP"] ] = [jsonInput[item]];
+		}
+	}
 	
-	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
+	var resArr = [];
 	
-	archive_GITHUB("Inspection Result Group", String(jsonInputOrg[0]["INSP_RESULT_GROUP"]), jsonInputOrg, result, overrideExisting);
+	for(var key in jsonMap){
+		var searchObj = {"INSP_RESULT_GROUP": String(key)};
+		
+		var jsonInputOrg = JSON.parse(JSON.stringify(jsonMap[key]));//Clone Object
+		
+		resArr = resArr.concat(conf.create(searchObj, jsonMap[key], subModels, overrideExisting));
+		
+		archive_GITHUB("Inspection Result Group", String(key), jsonInputOrg, {"success": true}, overrideExisting);
+	}
 	
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
 	return result;
 
 }
@@ -1308,7 +1556,7 @@ ConfigEngineAPI.createInspectionCheckListStatusGroup = function(jsonInput, overr
 	for(var key in jsonMap){
 		var searchObj = {"GUIDE_ITEM_STATUS_GROUP": String(key)};
 		
-		logDebug("searchObj: " + JSON.stringify(searchObj));
+//		logDebug("searchObj: " + JSON.stringify(searchObj));
 		
 		var jsonInputOrg = JSON.parse(JSON.stringify(jsonMap[key]));//Clone Object
 		
@@ -1316,6 +1564,7 @@ ConfigEngineAPI.createInspectionCheckListStatusGroup = function(jsonInput, overr
 			resArr = resArr.concat(conf.create(searchObj, jsonMap[key], subModels, overrideExisting));
 			
 			archive_GITHUB("Inspection Checklist Status Gro", String(key), jsonInputOrg, {"success": true}, overrideExisting);
+			
 		}catch(e){
 			logDebug("...ERRR...");
 			logDebug("searchObj: " + JSON.stringify({"GUIDE_ITEM_STATUS_GROUP": String(jsonMap[key][0]["GUIDE_ITEM_STATUS_GROUP"])}));
@@ -1325,13 +1574,8 @@ ConfigEngineAPI.createInspectionCheckListStatusGroup = function(jsonInput, overr
 	}
 	
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
-	return result;
 	
-//	var searchObj = {"GUIDE_ITEM_STATUS_GROUP": String(jsonInput[0]["GUIDE_ITEM_STATUS_GROUP"])};
-//	aa.print('String(jsonInput[0]["GUIDE_ITEM_STATUS_GROUP"]): ' + String(jsonInput[0]["GUIDE_ITEM_STATUS_GROUP"]));
-//	
-//	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
-
+	return result;
 }
 
 ConfigEngineAPI.searchGuideSheetModel = function(code, ignoreSubModels){
@@ -1441,6 +1685,7 @@ ConfigEngineAPI.searchInspectionCheckListItemList = function(code, ignoreSubMode
 
 ConfigEngineAPI.createInspectionCheckListItemModel = function(jsonInput, overrideExisting){
 	logDebug('createInspectionCheckListItemModel..................................');
+//	timeDebug('createInspectionCheckListItemModel:START');
 	overrideExisting = overrideExisting == undefined ? false : overrideExisting;
 	
 	if (!Array.isArray(jsonInput)) {
@@ -1489,11 +1734,10 @@ ConfigEngineAPI.createInspectionCheckListItemModel = function(jsonInput, overrid
 		}
 	}
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
-	return result;
 	
-//	var searchObj = {"GUIDE_TYPE": String(jsonInput[0]["GUIDE_TYPE"])};
-//	return conf.create(searchObj, jsonInput, subModels, overrideExisting);
-
+//	timeDebug('createInspectionCheckListItemModel:END');
+	
+	return result;
 }
 
 ConfigEngineAPI.searchNotificationTemplate = function(code, ignoreSubModels){
@@ -1960,19 +2204,25 @@ ConfigEngineAPI.searchTimeTypeModel = function(name, seq, ignoreSubModels) {
 	return conf.search(searchObj, asJson, ignoreSubModels, false, true);
 }
 
-//ConfigEngineAPI.searchWorkflowModel = function(code, ignoreSubModels) {
-//	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
-//
-//	conf.className = "com.accela.orm.model.workflow.WorkflowModel";
-//
-//	var searchObj = {
-//		"SPROCESS_GROUP_CODE" : String(code)
-//	};
-//
-//	conf.subModels = {};
-//
-//	return conf.search(searchObj, asJson, ignoreSubModels, false, true);
-//}
+ConfigEngineAPI.searchWorkflowList = function(code, ignoreSubModels) {
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+
+	conf.className = "com.accela.orm.model.workflow.WorkflowModel";
+
+	var searchObj = {
+		"SERV_PROV_CODE" : String(code)
+	};
+
+	conf.subModels = {};
+
+	var wfList = conf.search(searchObj, asJson, ignoreSubModels, false, true);
+	
+	wfList = wfList.map(function (wf) {
+		return wf["R1_PROCESS_CODE"];
+	});
+	
+	return distinctList(wfList);
+}
 
 ConfigEngineAPI.searchWorkflowProcessModel = function(code, ignoreSubModels) {
 	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
@@ -2455,56 +2705,3 @@ ConfigEngineAPI.searchDepartmentListWithLevels = function (code, ignoreSubModels
 //	java.lang.System.out.println("archive_GITHUB..........................");
 //}
 
-
-//var json = [];
-
-//var result = ConfigEngineAPI.loadUserConfigurations('ADMA');
-//var result = ConfigEngineAPI.searchASI('HASH_ASI', false);
-//var result = ConfigEngineAPI.searchASIT('HASH_ASIT', false);
-//var result = ConfigEngineAPI.loadASI_ASIT_Configurations('STANDARDTEST');
-//var result = ConfigEngineAPI.searchASIGroups('ADMA', false);
-//var result = ConfigEngineAPI.searchASI('HASH_ASI3', false);
-//var result = ConfigEngineAPI.searchASISubGroup('HASH_ASI3', 'APP3INFO3', false);
-//var result = ConfigEngineAPI.searchWorkflowModel('HASH_PROCESS', true);
-//var result = ConfigEngineAPI.searchWorkflowProcessModel('HASH_PROCESS', true);
-//var result = ConfigEngineAPI.searchWorkflowTaskItemModel('HASH_PROCESS', true);
-//var result = ConfigEngineAPI.searchWorkflowTaskStatusModel('HASH_PROCESS', true);
-//var result = ConfigEngineAPI.searchPageFlowModel('HASH_PF2', true);
-//var result = ConfigEngineAPI.searchApplicationType('Building/Certificates/Workbook/HASH', false);
-//var result = ConfigEngineAPI.searchCapTypeCitizenAccessModel('HASH_PF2', true);
-//var result = ConfigEngineAPI.searchPageFlowComponents('', false);
-//var result = ConfigEngineAPI.loadASI_ASIT_Configurations('ADMA'); 
-//var result = ConfigEngineAPI.searchSupportedLanguages('ADMA');
-//var secondLang = result[result.length - 1]["local"];
-//aa.print('secondLangwww: ' + secondLang);
-//var result = ConfigEngineAPI.searchSharedDropDownValues();
-//var result = ConfigEngineAPI.searchSharedDropDownList('ADMA', false);
-//var result = ConfigEngineAPI.searchApplicationStatusGroup('HASH', false);
-//var result = ConfigEngineAPI.searchApplicationStatusList('HASH', false);
-//var result = ConfigEngineAPI.searchTSIList('ADMA', false);
-//var result = ConfigEngineAPI.searchDepartmentListWithLevels('ADMA', false);
-//var result = ConfigEngineAPI.searchDepartmentListFlow('ADMA', false);
-//var result = ConfigEngineAPI.searchDepartmentList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionCodeList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListItemList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListStatusGroup('ACUD', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListStatusGroupList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionResultGroupList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListGroupList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListGroupModel('HASH_CH', false);
-//var result = ConfigEngineAPI.searchInspectionGroupModel('HASH3', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListItemModelList('ADMA', false);
-//var result = ConfigEngineAPI.searchInspectionCheckListItemModel('20719836', true);
-//var result = ConfigEngineAPI.searchInspectionCheckListItemModel('INACTIVE', true);
-//var result =  ConfigEngineAPI.searchSequenceList('ADMA', false);
-//var result =  ConfigEngineAPI.searchFeesSchedule('HASH', true);
-//var result =  ConfigEngineAPI.searchNotificationTemplate('ADMA', false);
-//var result =  ConfigEngineAPI.createNotificationTemplate(json, true);
-//var result =  ConfigEngineAPI.searchGuideSheetModel('Building');
-//var result =  ConfigEngineAPI.searchDrillDownList('ADMA');
-
-//aa.print('Result: \n' + result);
-//aa.print('Result: \n' + JSON.stringify(result));
-//aa.print('Result: \n' + JSON.stringify(stringifyJSType(result)));
-// pm(result, true);
-// pm(result, false);

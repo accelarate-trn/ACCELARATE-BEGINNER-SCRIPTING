@@ -196,6 +196,7 @@ ConfigEngineAPI.updateTimeAccountGroups = function (jsonInput, overrideExisting,
 }
 
 ConfigEngineAPI.updateTimeAccountTypes = function (jsonInput, overrideExisting, Delete) {
+	logDebug("updateTimeAccountTypes................");
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
@@ -203,7 +204,7 @@ ConfigEngineAPI.updateTimeAccountTypes = function (jsonInput, overrideExisting, 
 	var sysData = ConfigEngineAPI.getAllTimeAccountTypes(false);
 
 	conf.className = 'com.accela.orm.model.timeaccounting.TimeTypeModel';
-	var searchObj = { 'TIME_TYPE_NAME': '' };
+	var searchObj = { 'TIME_TYPE_NAME': '', 'R1_PER_GROUP': '', 'R1_PER_TYPE': '', 'R1_PER_SUB_TYPE': '', 'R1_PER_CATEGORY': '' };
 	var subModels = {
 		'timeTypeI18NModels': { 'ISLANG': true },
 		'timeGroupTypeModels': {},
@@ -213,26 +214,46 @@ ConfigEngineAPI.updateTimeAccountTypes = function (jsonInput, overrideExisting, 
 
 	var resArr = [];
 
-	var deletedItems = getDeletedItems(['TIME_TYPE_NAME'], sysData, jsonInput);
-	if (Delete && deletedItems.length > 0) {
-		for (var d in deletedItems) {
-			var dItem = deletedItems[d];
-			searchObj['TIME_TYPE_NAME'] = dItem['TIME_TYPE_NAME'];
-			conf.Delete(searchObj, subModels);
-		}
-	}
+//	var deletedItems = getDeletedItems(['TIME_TYPE_NAME', 'R1_PER_GROUP', 'R1_PER_TYPE', 'R1_PER_SUB_TYPE', 'R1_PER_CATEGORY'], sysData, jsonInput);
+//	logDebug("deletedItems.length: " + deletedItems.length);
+//	logDebug("Delete: " + Delete);
+//	if (Delete && deletedItems.length > 0) {
+//		for (var d in deletedItems) {
+//			var dItem = deletedItems[d];
+//			searchObj['TIME_TYPE_NAME'] = dItem['TIME_TYPE_NAME'];
+//			conf.Delete(searchObj, subModels);
+//		}
+//	}
 
-	var createdItems = getCreatedItems(['TIME_TYPE_NAME'], sysData, jsonInput);
+	var createdItems = getCreatedItems(['TIME_TYPE_NAME', 'RECORD_TYPE'], sysData, jsonInput);
+	logDebug("createdItems.length: " + createdItems.length);
 	for (var c in createdItems) {
 		var cItem = createdItems[c];
-		searchObj['TIME_TYPE_NAME'] = cItem['TIME_TYPE_NAME'];
+//		searchObj['TIME_TYPE_NAME'] = cItem['TIME_TYPE_NAME'];
+		searchObj = {
+				'TIME_TYPE_NAME': cItem['TIME_TYPE_NAME'],
+				'R1_PER_GROUP': cItem['R1_PER_GROUP'],
+				'R1_PER_TYPE': cItem['R1_PER_TYPE'],
+				'R1_PER_SUB_TYPE': cItem['R1_PER_SUB_TYPE'],
+				'R1_PER_CATEGORY': cItem['R1_PER_CATEGORY']
+		};
 		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, overrideExisting));
 	}
 
-	var updatedItems = getUpdatedItems(['TIME_TYPE_NAME'], sysData, jsonInput, { 'timeTypeI18NModels': 'LANG_ID' });
+	var updatedItems = getUpdatedItems(['TIME_TYPE_NAME', 'RECORD_TYPE'], sysData, jsonInput, { 'timeTypeI18NModels': 'LANG_ID' });
+	logDebug("updatedItems.length: " + updatedItems.length);
 	for (var u in updatedItems) {
 		var uItem = updatedItems[u];
-		searchObj['TIME_TYPE_NAME'] = uItem['TIME_TYPE_NAME'];
+//		searchObj['TIME_TYPE_NAME'] = uItem['TIME_TYPE_NAME'];
+		
+		searchObj = {
+				'TIME_TYPE_NAME': uItem['TIME_TYPE_NAME'],
+				'R1_PER_GROUP': uItem['R1_PER_GROUP'],
+				'R1_PER_TYPE': uItem['R1_PER_TYPE'],
+				'R1_PER_SUB_TYPE': uItem['R1_PER_SUB_TYPE'],
+				'R1_PER_CATEGORY': uItem['R1_PER_CATEGORY']
+		};
+		
 		var exItem = sysData.filter(function (item) { return item['TIME_TYPE_NAME'] == uItem['TIME_TYPE_NAME']; })[0];
 		uItem['timeGroupTypeModels'] = exItem['timeGroupTypeModels'];
 		uItem['timeProfileTypeModels'] = exItem['timeProfileTypeModels'];
@@ -242,25 +263,10 @@ ConfigEngineAPI.updateTimeAccountTypes = function (jsonInput, overrideExisting, 
 		resArr = resArr.concat(conf.create(searchObj, uItem, subModels, overrideExisting));
 	}
 	var result = resArr.filter(function (r) { return r.exists == true; }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
-	result["delete"] = deletedItems.length > 0;
+	result["delete"] = typeof(deletedItems) != "undefined" && deletedItems.length > 0;
 	
 	return result;
-	//	for(var i in jsonInput){
-	//		var groups = jsonInput[i]["timeGroupModel"]
-	//		jsonInput[i]["timeGroupTypeModels"] = []
-	//		var timeGroupTypeModels = jsonInput[i]["timeGroupTypeModels"]
-	//		for(var j in groups){
-	//			var groupJson = groups[j]
-	//			var groupModels = ConfigEngineAPI.searchTimeAccountGroup(groupJson["TIME_GROUP_NAME"], null, false);
-	//			if(groupModels.length > 0){
-	//				var groupTypeModel = {"TIME_GROUP_SEQ": groupModels[0]["TIME_GROUP_SEQ"]}
-	//				timeGroupTypeModels.push(groupTypeModel)
-	//			}
-	//		}
-	//
-	//		var policyModels = jsonInput[i]["timeTypepolicyModels"];
-	//		fillPolicyModel(policyModels, "TimeTypeSec", "User");
-	//	}
+
 }
 
 ConfigEngineAPI.searchTimeTypeModel = function (name, seq, ignoreSubModels) {
@@ -497,7 +503,25 @@ ConfigEngineAPI.searchLicensedProfessionals = function(code, ignoreSubModels){
 	return conf.search(searchObj, true, ignoreSubModels, false, true);
 }
 
-ConfigEngineAPI.searchLicensedProfessionalsList = function(code, ignoreSubModels){
+ConfigEngineAPI.searchLicensedProfessionalTypesList = function(){
+	conf.className = "com.accela.orm.model.common.StandardChoiceValueModel";
+
+	var searchObj = {
+		"BIZDOMAIN" : "LICENSED PROFESSIONAL TYPE"
+	};
+
+	conf.subModels = {};
+
+	var lpList =  conf.search(searchObj, asJson, true, false, true);
+	
+	lpList = lpList.map(function (lp) {
+		return lp["BIZDOMAIN_VALUE"];
+	});
+	
+	return distinctList(lpList);
+}
+
+ConfigEngineAPI.searchLicensedProfessionalsList = function(code, ignoreSubModels, asJson, inverse){
 	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
 	
 	conf.className = "com.accela.orm.model.licenseprofessional.RefLicensedProfessionalModel";
@@ -509,11 +533,34 @@ ConfigEngineAPI.searchLicensedProfessionalsList = function(code, ignoreSubModels
 	
 	var lpList = conf.search(searchObj, true, ignoreSubModels, false, true);
 
-	lpList = lpList.map(function (lp) {
-		return lp["LIC_SEQ_NBR"] + "::" + lp["LIC_TYPE"] + "::" + lp["LIC_NBR"];
-	});
+	if(asJson){
+		var lpListReturn = {};
+		if(inverse){
+			for(var lp in lpList){
+				lpListReturn[lpList[lp]["LIC_TYPE"] + "::" + lpList[lp]["LIC_NBR"]] = lpList[lp]["LIC_SEQ_NBR"];
+			}
+		}else{
+			for(var lp in lpList){
+				lpListReturn[lpList[lp]["LIC_SEQ_NBR"]] = lpList[lp]["LIC_TYPE"] + "::" + lpList[lp]["LIC_NBR"];
+			}
+		}
+		
+		return lpListReturn;
+	}else{
+		if(inverse){
+			lpList = lpList.map(function (lp) {
+				return lp["LIC_TYPE"] + "::" + lp["LIC_NBR"];
+			});
+		}else{
+			lpList = lpList.map(function (lp) {
+				return lp["LIC_SEQ_NBR"] + "::" + lp["LIC_TYPE"] + "::" + lp["LIC_NBR"];
+			});
+		}
+		
+		return distinctList(lpList);
+	}
 
-	return distinctList(lpList);
+	
 }
 
 ConfigEngineAPI.getContactNameById = function(id){
@@ -699,6 +746,421 @@ ConfigEngineAPI.searchContactsList = function(code, ignoreSubModels){
 	return distinctList(lpList);
 }
 
+ConfigEngineAPI.searchLicensedProfessionalAttributes = function(code, ignoreSubModels){
+	logDebug('ConfigEngineAPI.searchLicensedProfessionalAttributes..........................................');
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+		
+	conf.className = "com.accela.orm.model.licenseprofessional.RefPeopleAttributeModel";
+	
+	var searchObj = {"SERV_PROV_CODE": code};
+	
+	conf.subModels = {
+		};
+	
+	var attributes = conf.search(searchObj, true, ignoreSubModels, false, true, true);
+	
+	var LPs = ConfigEngineAPI.searchLicensedProfessionalsList(code, ignoreSubModels, true);
+	
+	attributes = attributes.map(function (attr) {
+		var res = {
+			"G1_ATTRIBUTE_NAME": attr["G1_ATTRIBUTE_NAME"],
+	        "G1_ATTRIBUTE_UNIT_TYPE": attr["G1_ATTRIBUTE_UNIT_TYPE"],
+	        "G1_ATTRIBUTE_VALUE": attr["G1_ATTRIBUTE_VALUE"],
+	        "G1_ATTRIBUTE_VALUE_DATA_TYPE": attr["G1_ATTRIBUTE_VALUE_DATA_TYPE"],
+	        "G1_ATTRIBUTE_VALUE_REQ_FLAG": attr["G1_ATTRIBUTE_VALUE_REQ_FLAG"],
+	        "G1_CONTACT_NBR": attr["G1_CONTACT_NBR"],
+	        "G1_CONTACT_TYPE": attr["G1_CONTACT_TYPE"],
+	        "G1_DISPLAY_ORDER": attr["G1_DISPLAY_ORDER"],
+	        "G1_VALIDATION_SCRIPT": attr["G1_VALIDATION_SCRIPT"],
+	        "SERV_PROV_CODE": attr["SERV_PROV_CODE"],
+	        "VCH_DISP_FLAG1": attr["VCH_DISP_FLAG"],
+	        "LICPRO": LPs[attr["G1_CONTACT_NBR"]]
+		};
+		return res;
+	});
+	
+	return attributes; 
+}
+
+ConfigEngineAPI.updateLicensedProfessionalAttributes = function (jsonInput, serviceProvidorCode, overrideExisting){
+	logDebug('ConfigEngineAPI.updateLicensedProfessionalAttributes..........................................');
+
+	var LPs = ConfigEngineAPI.searchLicensedProfessionalsList(String(jsonInput[0]['SERV_PROV_CODE']), true, true, true);
+	var option = jsonInput[0]['OPTION'];//1= update , 2= delete/insert
+	
+	var filteredJson = {};
+	
+	for(var item in jsonInput){
+		var licPro = ""+LPs[jsonInput[item]["LICPRO"]];
+		jsonInput[item]["G1_CONTACT_NBR"] = licPro;
+		delete jsonInput[item]["OPTION"];
+		delete jsonInput[item]["LICPRO"];
+		
+		var jsonItem = filteredJson[licPro];
+		if(jsonItem == null || jsonItem == undefined){
+			jsonItem = [];
+		}
+		jsonItem.push(jsonInput[item]);
+		
+		filteredJson[licPro] = jsonItem;
+	}
+	
+	conf.className = "com.accela.orm.model.licenseprofessional.RefPeopleAttributeModel";
+	
+	var searchObj = {"SERV_PROV_CODE": String(jsonInput[0]['SERV_PROV_CODE']), "G1_CONTACT_NBR": "", "G1_CONTACT_TYPE": ""};
+	
+	conf.subModels = {
+		};
+	
+	var resArr = [];
+	var res = '';
+	
+	for(var key in filteredJson){
+		if(option == '1'){
+			logDebug('Option is 1');
+			
+			
+			var attributeNames = [];
+			
+			for(var c in filteredJson[key]){
+				attributeNames.push(filteredJson[key][c]["G1_ATTRIBUTE_NAME"]);
+			}
+			
+			attributeNames = JSON.stringify(attributeNames);
+			attributeNames = attributeNames.replace('[', '');
+			attributeNames = attributeNames.replace(']', '');
+			attributeNames = replaceAll(attributeNames, '"', '\'');
+			
+			var deleteSql = "delete from G3contact_attribute where SERV_PROV_CODE = '" +
+			String(jsonInput[0]['SERV_PROV_CODE']) + "' and G1_CONTACT_NBR = '" +
+			filteredJson[key][0]["G1_CONTACT_NBR"] + "' and G1_CONTACT_TYPE = '" +
+			filteredJson[key][0]["G1_CONTACT_TYPE"] + "' and G1_ATTRIBUTE_NAME in (" + attributeNames + ")";
+			
+			logDebug('Delete Query: ' + deleteSql);
+			
+			conf.deleteBySQL(deleteSql, null);
+			
+			searchObj = {"SERV_PROV_CODE": String(jsonInput[0]['SERV_PROV_CODE']), "G1_CONTACT_NBR": filteredJson[key][0]["G1_CONTACT_NBR"], "G1_CONTACT_TYPE": filteredJson[key][0]["G1_CONTACT_TYPE"]};
+			res = conf.create(searchObj, filteredJson[key], subModels, overrideExisting, true, false, false, false, true);
+			
+		}else{
+			searchObj = {"SERV_PROV_CODE": String(jsonInput[0]['SERV_PROV_CODE']), "G1_CONTACT_NBR": filteredJson[key][0]["G1_CONTACT_NBR"], "G1_CONTACT_TYPE": filteredJson[key][0]["G1_CONTACT_TYPE"]};
+			res = conf.create(searchObj, filteredJson[key], subModels, overrideExisting);
+		}
+		
+		resArr = resArr.concat(res);
+	}
+	
+	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
+	
+	return result;
+}
+
+ConfigEngineAPI.searchLicensedProfessionalTablesData = function(code, ignoreSubModels){
+	logDebug('ConfigEngineAPI.searchLicensedProfessionalTablesData..........................................');
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+		
+	conf.className = "com.accela.orm.model.licenseprofessional.RefInfoTabelFieldModel";
+	
+	var searchObj = {"SERV_PROV_CODE": code};
+	
+	conf.subModels = {
+			"refInfoTabelValueModels": {}
+		};
+	
+	var attributes = conf.search(searchObj, true, ignoreSubModels, false, true, true);
+	
+	var LPs = ConfigEngineAPI.searchLicensedProfessionalsList(code, ignoreSubModels, true);
+	
+	var attributesList = [];
+	
+	for(var a in attributes){
+		var att = attributes[a];
+		
+		for(v in att["refInfoTabelValueModels"]){
+			var valueModel = att["refInfoTabelValueModels"][v];
+			
+			var valueOutput = {
+					"GROUP_CODE": valueModel["GROUP_CODE"],
+					"INFO_ID": valueModel["INFO_ID"],
+					"INFO_NAME": att["INFO_NAME"],
+					"LEVEL_NBR": att["LEVEL_NBR"],
+					"PARENT_ID": att["PARENT_ID"],
+					"R1_DISPLAY_LIC_VERIF_ACA": att["R1_DISPLAY_LIC_VERIF_ACA"],
+					"REF_CATEGORY": att["REF_CATEGORY"],
+					"REFERENCE_ID": att["REFERENCE_ID"],
+					"REQUIRED_FLAG": att["REQUIRED_FLAG"],
+					"SERV_PROV_CODE": att["SERV_PROV_CODE"],
+					"GROUPCODE_NAME": valueModel["GROUPCODE_NAME"],
+					"ROW_NUM": valueModel["ROW_NUM"],
+					"SUBGROUP_NAME": valueModel["SUBGROUP_NAME"],
+					"TABLE_VALUE": valueModel["TABLE_VALUE"],
+					"LICPRO": LPs[valueModel["REFERENCE_ID"]]
+			};
+			
+			attributesList.push(valueOutput);
+		}
+	}
+	
+	return attributesList; 
+}
+
+ConfigEngineAPI.searchLicensedProfessionalTablesData_OGR = function(code, ignoreSubModels){
+	logDebug('ConfigEngineAPI.searchLicensedProfessionalTablesData_OGR..........................................');
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+		
+	conf.className = "com.accela.orm.model.licenseprofessional.RefInfoTabelFieldModel";
+	
+	var searchObj = {"SERV_PROV_CODE": code};
+	
+	conf.subModels = {
+			"refInfoTabelValueModels": {}
+		};
+	
+	var attributes = conf.search(searchObj, true, ignoreSubModels, false, true, true);
+	
+	var orgData = {};
+	
+	for(var a in attributes){
+		var att = attributes[a];
+		var referenceId = att['REFERENCE_ID'];
+		
+		var attList = orgData[referenceId];
+		if(attList == null || attList == undefined){
+			attList = [];
+		}
+		
+		att['refInfoTabelValueModels'] = [];
+		
+		attList.push(att);
+		
+		orgData[referenceId] = attList;
+	}
+	
+	return orgData; 
+}
+
+ConfigEngineAPI.getLicensedProfessionalTablesCachOrder = function(code){
+	logDebug('ConfigEngineAPI.getLicensedProfessionalTablesCachOrder............');
+	
+	conf.className = "com.accela.orm.model.asi.RefAppSpecInfoFieldModel";
+	
+	var searchObj = {"SERV_PROV_CODE": String(code), "R1_CHECKBOX_GROUP": "LICENSEINFOTABLE"};
+	
+	conf.subModels = {
+		};
+	
+	var columns = conf.search(searchObj, asJson, false, false, true);
+	
+	columns.sort(function(a, b){
+//		return a["RES_ID"] - b["RES_ID"];
+		return a["R1_DISPLAY_ORDER"] - b["R1_DISPLAY_ORDER"];
+	});
+	
+	var columnCounter = {};
+	var returnResult = {};
+	
+	for(var c in columns){
+		var keyCounter = columns[c]["R1_TABLE_GROUP_NAME"] + ":" + columns[c]["R1_CHECKBOX_TYPE"];
+		var key = columns[c]["R1_TABLE_GROUP_NAME"] + ":" + columns[c]["R1_CHECKBOX_TYPE"] + ":" + columns[c]["R1_CHECKBOX_DESC"];
+		
+		var counter = columnCounter[keyCounter];
+		if(counter == null || counter == undefined){
+			counter = 0;
+		}
+		
+		returnResult[key] = String(counter);
+		
+		counter ++;
+		columnCounter[keyCounter] = counter;
+	}
+	
+	return returnResult;
+}
+
+ConfigEngineAPI.updateLicensedProfessionalTablesData = function (jsonInput, serviceProvidorCode, overrideExisting){
+	logDebug('ConfigEngineAPI.updateLicensedProfessionalTablesData..........................................');
+	
+	if(!overrideExisting){
+		logDebug('Returning: {"success": false, "exists": true}');
+		return {
+			"success": false,
+			"exists": true
+		};
+	}
+	
+	var serProvCode = String(jsonInput[0]['SERV_PROV_CODE']);
+	
+	var LPs = ConfigEngineAPI.searchLicensedProfessionalsList(serProvCode, true, true, true);
+	
+	var orgData = ConfigEngineAPI.searchLicensedProfessionalTablesData_OGR();
+	logDebug('orgData: ' + JSON.stringify(stringifyJSType(orgData)));
+	
+	var columnsNumberCache = ConfigEngineAPI.getLicensedProfessionalTablesCachOrder(serProvCode);
+	logDebug('columnsNumberCache: ' + JSON.stringify(columnsNumberCache));
+	
+	
+	var delGroupCode = {};
+	var delInfoName = {};
+	var delReferenceId = {};
+	var delGroupCodeName = {};
+	var delSubGroupName = {};
+	
+	var sqlInsert1 = {};
+	var sqlInsert2 = {};
+	
+	var subGroupSequences = {};
+	var columnSequences = {};
+	
+	var sequenceGeneratorEJB = new com.accela.sequence.SequenceGeneratorEJB();
+	
+	for(var item in jsonInput){
+		var lipProOrg = jsonInput[item]["LICPRO"];
+		lipProOrg = lipProOrg.split("::");
+		lipProOrg[0] = lipProOrg[0].toUpperCase();
+		var licPro = ""+LPs[jsonInput[item]["LICPRO"]];
+		logDebug('licPro: ' + licPro);
+		
+		var attBulk = orgData[licPro];
+		var parentInfoId;
+		if(attBulk == null || attBulk == undefined){
+			parentInfoId = sequenceGeneratorEJB.getNextValue("RINFO_TABLE_SEQ");
+			var parentSqlInsert = "insert into Rinfo_table values ('" + serProvCode + "', '" + parentInfoId + "', '1', '" + licPro + "', '" + lipProOrg[0] + "', '0', '1', '" + lipProOrg[0] + "', null, null, null, null, null, null, SYSDATETIME(), 'ADMIN', 'A', null)";
+			logDebug('parentSqlInsert: \n' + parentSqlInsert);
+			conf.updateBySQL(parentSqlInsert);
+			
+			orgData[licPro] = [
+			                   {
+			                	   "COLUMN_TYPE":null,
+			                	   "DEFAULT_VALUE":null,
+			                	   "DISPLAY_LENGTH":null,
+			                	   "DISPLAY_ORDER":null,
+			                	   "GROUP_CODE":"CONTRACTOR",
+			                	   "INFO_ID":parentInfoId,
+			                	   "INFO_NAME":"CONTRACTOR",
+			                	   "LEVEL_NBR":"1",
+			                	   "MAX_LENGTH":null,
+			                	   "PARENT_ID":"0",
+			                	   "R1_DISPLAY_LIC_VERIF_ACA":null,
+			                	   "REF_CATEGORY":"1",
+			                	   "REFERENCE_ID":licPro,
+			                	   "REQUIRED_FLAG":null,
+			                	   "SERV_PROV_CODE":serProvCode,
+			                	   "refInfoTabelValueModels": []
+			                   }
+			                   ];
+		}else{
+			parentInfoId = attBulk[0]['INFO_ID'];
+		}
+		
+		delGroupCode[lipProOrg[0]] = '';
+		delInfoName[jsonInput[item]["SUBGROUP_NAME"]] = '';
+		delInfoName[jsonInput[item]["INFO_NAME"]] = '';
+		delReferenceId[licPro] = '';
+		delGroupCodeName[lipProOrg[0]] = '';
+		delSubGroupName[jsonInput[item]['SUBGROUP_NAME']] = '';
+		
+		var subGroupInfoId = subGroupSequences[licPro+':'+lipProOrg[0]+':'+parentInfoId+':'+jsonInput[item]["SUBGROUP_NAME"]];
+		if(subGroupInfoId == null || subGroupInfoId == undefined){
+			subGroupInfoId = sequenceGeneratorEJB.getNextValue("RINFO_TABLE_SEQ");
+			subGroupSequences[licPro+':'+lipProOrg[0]+':'+parentInfoId+':'+jsonInput[item]["SUBGROUP_NAME"]] = subGroupInfoId;
+		}
+		var sql1 = "'" + serProvCode + "', '" + subGroupInfoId + "', '1', '" + licPro + "', '" + lipProOrg[0] + "', '" + parentInfoId + "', '2', '" + jsonInput[item]["SUBGROUP_NAME"] + "', '10', null, null, null, null, null, SYSDATETIME(), 'ADMIN', 'A', null";
+		sqlInsert1[sql1] = sql1;
+
+		var columnInfoId = columnSequences[licPro+':'+lipProOrg[0]+":"+subGroupInfoId+':'+jsonInput[item]["INFO_NAME"]];
+		if(columnInfoId == null || columnInfoId == undefined){
+			columnInfoId = sequenceGeneratorEJB.getNextValue("RINFO_TABLE_SEQ");
+			columnSequences[licPro+':'+lipProOrg[0]+":"+subGroupInfoId+':'+jsonInput[item]["INFO_NAME"]] = columnInfoId;
+		}
+		var sql2 = "'" + serProvCode + "', '" + columnInfoId + "', '1', '" + licPro + "', '" + lipProOrg[0] + "', '" + subGroupInfoId + "', '3', '" + jsonInput[item]["INFO_NAME"] + "', 10, '1', null, '', '0', 'N', SYSDATETIME(), 'ADMIN', 'A', 'N'";
+		sqlInsert1[sql2] = sql2;
+
+		columnCacheKey = lipProOrg[0] + ":" + String(jsonInput[item]['SUBGROUP_NAME']) + ":" + jsonInput[item]["INFO_NAME"];
+		var columnNumber = columnsNumberCache[columnCacheKey];
+
+		var cellSeqVal = sequenceGeneratorEJB.getNextValue("RINFO_TABLE_VALUE_SEQ");
+		var sql3 = "'" + serProvCode + "', '" + cellSeqVal + "', '" + columnInfoId + "', '1', '" + licPro + "', '" + lipProOrg[0] + "', '" + String(jsonInput[item]['SUBGROUP_NAME']) + "', '" + columnNumber + "', '" + String(jsonInput[item]['ROW_NUM']) + "', '" + columnNumber + "', '" + String(jsonInput[item]['TABLE_VALUE']) + "', SYSDATETIME(), 'ADMIN', 'A'";
+		sqlInsert2[sql3] = sql3;
+	}
+	
+	
+	var delSQL1 = 'delete from Rinfo_table where SERV_PROV_CODE = \'' + serProvCode + '\' and GROUP_CODE in (#GROUP_CODE#) and INFO_NAME in (#INFO_NAME#) and REFERENCE_ID in (#REFERENCE_ID#)';
+	var delSQL2 = 'delete from Rinfo_table_value where SERV_PROV_CODE = \'' + serProvCode + '\' and GROUPCODE_NAME in (#GROUPCODE_NAME#) and SUBGROUP_NAME in (#SUBGROUP_NAME#) and REFERENCE_ID in (#REFERENCE_ID#)';
+	
+	delSQL1 = delSQL1.replace("#GROUP_CODE#", JSONObjectToKeysArray(delGroupCode));
+	delSQL1 = delSQL1.replace("#INFO_NAME#", JSONObjectToKeysArray(delInfoName));
+	delSQL1 = delSQL1.replace("#REFERENCE_ID#", JSONObjectToKeysArray(delReferenceId));
+	
+	delSQL2 = delSQL2.replace("#GROUPCODE_NAME#", JSONObjectToKeysArray(delGroupCodeName));
+	delSQL2 = delSQL2.replace("#SUBGROUP_NAME#", JSONObjectToKeysArray(delSubGroupName));
+	delSQL2 = delSQL2.replace("#REFERENCE_ID#", JSONObjectToKeysArray(delReferenceId));
+	
+	logDebug('Delete SQL1: \n' + delSQL1);
+	logDebug('Delete SQL2: \n' + delSQL2);
+	
+	conf.deleteBySQL(delSQL2, []);
+	conf.deleteBySQL(delSQL1, []);
+	
+	var sqlInsertInfoTable = null;
+	for(var key in sqlInsert1){
+		if(sqlInsertInfoTable == null){
+			sqlInsertInfoTable = "insert into Rinfo_table ";
+		}else{
+			sqlInsertInfoTable += " union all ";
+		}
+		
+		sqlInsertInfoTable += 'select ' + key;
+	}
+	logDebug('sqlInsertInfoTable: \n' + sqlInsertInfoTable);
+	conf.updateBySQL(sqlInsertInfoTable);
+	
+	var sqlInsertInfoTableValue = null;
+	for(var key in sqlInsert2){
+		if(sqlInsertInfoTableValue == null){
+			sqlInsertInfoTableValue = "insert into Rinfo_table_value ";
+		}else{
+			sqlInsertInfoTableValue += " union all ";
+		}
+		
+		sqlInsertInfoTableValue += 'select ' + key;
+	}
+	logDebug('sqlInsertInfoTableValue: \n' + sqlInsertInfoTableValue);
+	conf.updateBySQL(sqlInsertInfoTableValue);
+	
+	return { 'success': true, 'exists': true };
+}
+
+ConfigEngineAPI.searchLicensedProfessionalTablesDataValue = function(code, ignoreSubModels){
+	logDebug('ConfigEngineAPI.searchLicensedProfessionalTablesData..........................................');
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+		
+	conf.className = "com.accela.orm.model.licenseprofessional.RefInfoTabelValueModel";
+	
+	var searchObj = {"SERV_PROV_CODE": code};
+	
+	conf.subModels = {
+		};
+	
+	var attributes = conf.search(searchObj, true, ignoreSubModels, false, true, true);
+	
+	return attributes; 
+}
+
+ConfigEngineAPI.searchUserSecurityModel = function(USER_NAME, ignoreSubModels){
+	logDebug('ConfigEngineAPI.searchUserSecurityModel..........................................');
+	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+		
+	conf.className = "com.accela.orm.model.common.UserSecurityModel";
+	
+	var searchObj = { "LEVEL_DATA": String(USER_NAME), "LEVEL_TYPE": "User", "POLICY_NAME": "UserSettings" }
+	
+	conf.subModels = {
+		};
+	
+	return conf.search(searchObj, true, ignoreSubModels, false, true, true);
+}
+
 ConfigEngineAPI.updateLicensedProfessionals = function (jsonInput, serviceProvidorCode, overrideExisting){
 	logDebug('ConfigEngineAPI.updateLicensedProfessionals..........................................');
 	
@@ -722,38 +1184,45 @@ ConfigEngineAPI.updateLicensedProfessionals = function (jsonInput, serviceProvid
 	var resArr = [];
 	
 	var subModels = {};
-	var searchObj = { 'LIC_NBR': '' };
+	var searchObj = { 'LIC_NBR': '', 'LIC_TYPE': '' };
 	
-	var deletedItems = getDeletedItems(['LIC_NBR'], sysData, jsonInput);
-	var createdItems = getCreatedItems(['LIC_NBR'], sysData, jsonInput);
-	var updatedItems = getUpdatedItems(['LIC_NBR'], sysData, jsonInput, {});
+//	var deletedItems = getDeletedItems(['LIC_NBR', 'LIC_TYPE], sysData, jsonInput);
+	var createdItems = getCreatedItems(['LIC_NBR', 'LIC_TYPE'], sysData, jsonInput);
+	var updatedItems = getUpdatedItems(['LIC_NBR', 'LIC_TYPE'], sysData, jsonInput, {});
 	
-	logDebug("deletedItems:: " + JSON.stringify(stringifyJSType(deletedItems)));
+//	logDebug("deletedItems:: " + JSON.stringify(stringifyJSType(deletedItems)));
 	logDebug("createdItems:: " + JSON.stringify(stringifyJSType(createdItems)));
 	logDebug("updatedItems:: " + JSON.stringify(stringifyJSType(updatedItems)));
 	
 	if(createdItems != null && createdItems.length > 0){
-		resArr = resArr.concat(conf.create(searchObj, createdItems, subModels, false));
+		var sequenceGeneratorEJB = new com.accela.sequence.SequenceGeneratorEJB();
+		for(var item in createdItems){
+			var newSeq = sequenceGeneratorEJB.getNextValue("RSTATE_LIC_SEQ");
+			createdItems[item]["LIC_SEQ_NBR"] = newSeq;
+		}
+		
+//		resArr = resArr.concat(conf.create(searchObj, createdItems, subModels, false));
+		resArr = resArr.concat(conf.create("BATCH", createdItems, subModels, false));
 	}
 	
-	if(deletedItems != null && deletedItems.length > 0){
-		for (var d in deletedItems) {
-			var dItem = deletedItems[d];
-			searchObj['LIC_NBR'] = dItem['LIC_NBR'];
-			logDebug('Deleting: ' + searchObj['LIC_NBR']);
-			var exItem = getItemsByFilter(['LIC_NBR'], sysData, searchObj)[0];
-			
-			conf.className = 'com.accela.orm.model.licenseprofessional.RefLicensedProfessionalModel';
-			
-			//Deleting Reference
-			var sql = "delete from XLICENSEE_RECORD where SERV_PROV_CODE = '" + exItem["SERV_PROV_CODE"] + "' and LIC_SEQ_NBR = " + exItem["LIC_SEQ_NBR"];
-			logDebug('Delete SQL: \n' + sql);
-			var params = [];
-//			conf.deleteBySQL(sql, params);
-			
-			conf.Delete(searchObj, subModels);
-		}
-	}
+//	if(deletedItems != null && deletedItems.length > 0){
+//		for (var d in deletedItems) {
+//			var dItem = deletedItems[d];
+//			searchObj['LIC_NBR'] = dItem['LIC_NBR'];
+//			logDebug('Deleting: ' + searchObj['LIC_NBR']);
+//			var exItem = getItemsByFilter(['LIC_NBR'], sysData, searchObj)[0];
+//			
+//			conf.className = 'com.accela.orm.model.licenseprofessional.RefLicensedProfessionalModel';
+//			
+//			//Deleting Reference
+//			var sql = "delete from XLICENSEE_RECORD where SERV_PROV_CODE = '" + exItem["SERV_PROV_CODE"] + "' and LIC_SEQ_NBR = " + exItem["LIC_SEQ_NBR"];
+//			logDebug('Delete SQL: \n' + sql);
+//			var params = [];
+////			conf.deleteBySQL(sql, params);
+//			
+//			conf.Delete(searchObj, subModels);
+//		}
+//	}
 	
 	logDebug('Updating................. ');
 	for (var u in updatedItems) {
@@ -761,6 +1230,7 @@ ConfigEngineAPI.updateLicensedProfessionals = function (jsonInput, serviceProvid
 		var uItem = updatedItems[u];
 		
 		searchObj['LIC_NBR'] = uItem['LIC_NBR'];
+		searchObj['LIC_TYPE'] = uItem['LIC_TYPE'];
 		
 		logDebug('Updating: ' + searchObj['LIC_NBR']);
 		logDebug('Updating::uItem: ' + JSON.stringify(uItem));
@@ -1170,6 +1640,7 @@ ConfigEngineAPI.updatePublicUsers = function (jsonInput, serviceProvidorCode, ov
 				searchObj = { 'USER_SEQ_NBR': newSeq };
 				
 				var isGenerator = false;
+				logDebug('Going to create Item: \n' + JSON.stringify(stringifyJSType(InputJSON)));
 				var rcpu = conf.create(searchObj, InputJSON, subModels, overrideExisting, false, false, isGenerator);
 				logDebug('rcpu:: ' + rcpu);
 			}catch(e){
@@ -1190,7 +1661,7 @@ ConfigEngineAPI.updatePublicUsers = function (jsonInput, serviceProvidorCode, ov
 			user["DISTINGUISH_NAME"] = null;
 			user["EMPLOYEE_ID"] = null;
 			user["FNAME"] = null;
-			user["GA_USER_ID"] = newSeq;
+			user["GA_USER_ID"] = ""+newSeq;
 			user["INSPECTOR_STATUS"] = null;
 			user["INTEGRATED_FLAG"] = null;
 			user["LAST_CHANGE_PASSWORD"] = null;
@@ -1218,6 +1689,7 @@ ConfigEngineAPI.updatePublicUsers = function (jsonInput, serviceProvidorCode, ov
 			searchObj = { 'USER_NAME': 'PUBLICUSER'+ newSeq};
 			
 			var isGenerator = false;
+			logDebug('Going to create PUSER: \n' + JSON.stringify(stringifyJSType(user)));
 			var rcpu = conf.create(searchObj, user, subModels, true, false, false, isGenerator);
 			logDebug('rcpu:: ' + rcpu);
 			
@@ -1253,7 +1725,7 @@ ConfigEngineAPI.updatePublicUsers = function (jsonInput, serviceProvidorCode, ov
 			staff["GA_SUBGROUP_CODE"]= null;
 			staff["GA_SUFFIX"]= null;
 			staff["GA_TITLE"]= null;
-			staff["GA_USER_ID"] = newSeq;
+			staff["GA_USER_ID"] = ""+newSeq;
 			staff["RES_ID"]= null;
 			staff["SERV_PROV_CODE"] = serviceProvidorCode;
 			staff["USER_NAME"] = "PUBLICUSER" + newSeq;
@@ -1472,7 +1944,7 @@ ConfigEngineAPI.createUpdateUserProfile = function(jsonInput, overrideExisting){
 }
 
 
-ConfigEngineAPI.getAllUsers = function (ignoreSubModels) {
+ConfigEngineAPI.getAllUsers = function (ignoreSubModels, isForUpdate) {
 	logDebug('getAllUsers.......................');
 	ignoreSubModels = ignoreSubModels == null || ignoreSubModels == undefined ? false : ignoreSubModels;
 	var userProfiles = {
@@ -1512,6 +1984,10 @@ ConfigEngineAPI.getAllUsers = function (ignoreSubModels) {
 	});
 	
 	logDebug('aaUsers.length: ' + aaUsers.length);
+	
+	if(isForUpdate){
+		return aaUsers;
+	}
 
 	for (var u in aaUsers) {
 		aaUsers[u]["PASSWORD"] = ""
@@ -1619,7 +2095,7 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 	
 	logDebug("jsonInput:: " + JSON.stringify(stringifyJSType(jsonInput)));
 	
-	var sysData = ConfigEngineAPI.getAllUsers(false);
+	var sysData = ConfigEngineAPI.getAllUsers(false, true);
 
 	var searchObj = { 'USER_NAME': '' }
 	
@@ -1653,29 +2129,6 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 		"28": "Y"
 	};
 
-//	var userProfiles = {//Active/InActive: 7 - 21 + 24 + 27   [A/I]
-//		"3": "DEFAULT_MODULE",
-//		"4": "ACCESS_MODE",
-//		"5": "BILLING_RATE",
-//		//"7": "May Enter Time Accounting", // Y/N
-//		//"8": "Time Accounting Group", // null = all, id = time accounting group
-//		//"9": "Time Accounting Types", // 0 = "All Time Accounting Types" , 1 = "Specified Time Accounting Types"
-//		//"10": "Number of Days That Delete is Allowed"// MAX 999
-//		//"11": "Number of Days That Update is Allowed",// MAX 999
-//		//"12": "Hourly Rate",
-//		//"13": "	May Modify the Logged Date" // Y/N 
-//		//"14", "May Modify Billable Flag", // Y/N
-//		//"15": "May Enter Materials And Cost",// X=Hidden Y N
-//		//"16": "May Enter Start/End/Elapsed Time", // 0 = "Yes" , 1 = "Elapsed Time Only"
-//		//"17": "May See Other User's Time Accounting", // Y/N
-//		//"18": "May Modify Rates and Cost",// S X Y N A
-//		//"19": "May Enter Vehicle and Mileage",// X Y N
-//		//"20": "May Delete Other User's Time Accounting", // N= No, S=Supervisor, A=Administrator
-//		//"21": "May Add/Modify Other User's Time Accounting", // N= No, S=Supervisor, A=Administrator
-//		"23": "DISP_INITIALS",
-//		//"27": "May Lock Other User's Time Accounting" // N= No, S=Supervisor, A=Administrator
-//	}
-
 	var subModels = {
 		'delegateUserModels': {},
 		'userDisciplineModels': {},
@@ -1688,12 +2141,20 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 
 	var resArr = [];
 
+//	timeDebug("Getting created Items");
 	var createdItems = getCreatedItems(['USER_NAME'], sysData, jsonInput);
 	logDebug("createdItems.length: " + createdItems.length);
+//	timeDebug("After Getting created Items");
+	
+	var sql1Params = null;
+	var sql2ParamsA = null;
+	var sql2ParamsI = null;
 	
 	for (var c in createdItems) {
 		var cItem = createdItems[c];
-		logDebug('cItem Before: \n' + JSON.stringify(stringifyJSType(cItem)));
+//		timeDebug("cItem Before");
+//		logDebug('cItem Before: \n' + JSON.stringify(stringifyJSType(cItem)));
+//		timeDebug("cItem Before");
 		
 		searchObj['USER_NAME'] = cItem['USER_NAME'];
 
@@ -1728,59 +2189,130 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 		}
 
 		// Department
+//		timeDebug("Before fillDepartment");
 		fillDepartment(cItem);
+//		timeDebug("After fillDepartment");
 
 		// userSecurityModels
-		cItem['userSecurityModels'] = []
+		cItem['userSecurityModels'] = [];
+		
+		var sequenceGeneratorEJB = new com.accela.sequence.SequenceGeneratorEJB();
+		var xPolicySeq = sequenceGeneratorEJB.getNextValue("XPOLICY_SEQ");
+		logDebug('xPolicySeq ::: ' + xPolicySeq);
 		var policy = {
 			"DATA1": "AGIS=" + cItem["AGIS"] + ";" + "AMO=" + cItem["AMO"] + ";" + "AW=" + cItem["AW"] + ";" + "DUMMYUSER=" + cItem["DUMMYUSER"],
 			"LEVEL_DATA": cItem['USER_NAME'],
 			"LEVEL_TYPE": "User",
 			"POLICY_NAME": "UserSettings",
 			"RIGHT_GRANTED": "Y",
-			"STATUS": "Y"
+			"STATUS": "Y",
+			"POLICY_SEQ": xPolicySeq
 		}
 		cItem["userSecurityModels"].push(policy);
 		
+		timeDebug("cItem After");
 		logDebug('cItem After: \n' + JSON.stringify(stringifyJSType(cItem)));
+		timeDebug("cItem After");
 		// Do create...
-		conf.className = 'com.accela.orm.model.common.UserModel';
-		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, false));
+//		conf.className = 'com.accela.orm.model.common.UserModel';
+//		resArr = resArr.concat(conf.create(searchObj, cItem, subModels, false));
 		// Update staffsModel for i18
-		updateStaffsModel(cItem['staffsModel']);
+//		updateStaffsModel(cItem['staffsModel']);
 		
+		if(sql1Params == null){
+			sql1Params = "'" + cItem['USER_NAME'] + "'";
+		}else{
+			sql1Params += ",'" + cItem['USER_NAME'] + "'";
+		}
 		
-		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME = '" + cItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR = 28";
-		conf.updateBySQL(sql1);
 		//update Active InActive Manually
 		var activeInActive = !isNullOrEmpty(cItem['USER_PROFILE']) && !isNullOrEmpty(cItem['USER_PROFILE']['ACTIVE']) && (cItem['USER_PROFILE']['ACTIVE'] == true || cItem['USER_PROFILE']['ACTIVE'] == 'true') ? 'A' : 'I';
-		var sql = "update PUSER_PROFILE set REC_STATUS = '" + activeInActive + "' WHERE USER_NAME = '" + cItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
-		conf.updateBySQL(sql);
+		
+		if(activeInActive == 'A'){
+			if(sql2ParamsA == null){
+				sql2ParamsA = "'" + cItem['USER_NAME'] + "'";
+			}else{
+				sql2ParamsA += ",'" + cItem['USER_NAME'] + "'";
+			}
+		}else{
+			if(sql2ParamsI == null){
+				sql2ParamsI = "'" + cItem['USER_NAME'] + "'";
+			}else{
+				sql2ParamsI += ",'" + cItem['USER_NAME'] + "'";
+			}
+		}
+		
+		createdItems[c] = cItem;
+		
+//		conf.className = 'com.accela.orm.model.common.UserModel';
+//		logDebug('Creatint...................');
+//		logDebug('Creatint: \n' + JSON.stringify(stringifyJSType(createdItems[c])));
+//		var rrr = conf.create(searchObj, createdItems[c], subModels, overrideExisting);
+//		logDebug('rrr: ' + rrr);
+//		resArr = resArr.concat(rrr);
 	}
+	
+	if(createdItems.length > 0){
+		logDebug('Batch Create...................');
+		conf.className = 'com.accela.orm.model.common.UserModel';
+		resArr = resArr.concat(conf.create("BATCH", createdItems, subModels, false));
+		logDebug('Batch Create................... Done');
+	}
+	
+	for (var c in createdItems) {
+		var cItem = createdItems[c];
+		
+		updateStaffsModel(cItem['staffsModel']);//time..........715ms
+//		timeDebug("updateStaffsModel");
+	}
+	
+	if(sql1Params != null){
+		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME in (" + sql1Params + ") AND PROFILE_SEQ_NBR = 28";
+		conf.updateBySQL(sql1);
+	}
+	
+	if(sql2ParamsA != null){
+		var sql2A = "update PUSER_PROFILE set REC_STATUS = 'A' WHERE USER_NAME in (" + sql2ParamsA + ") AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+		conf.updateBySQL(sql2A);
+	}
+	
+	if(sql2ParamsI != null){
+		var sql2I = "update PUSER_PROFILE set REC_STATUS = 'I' WHERE USER_NAME in (" + sql2ParamsI + ") AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+		conf.updateBySQL(sql2I);
+	}
+	
 
+//	timeDebug("Going to get the updated Items");
 	logDebug("Going to get the updated Items..............");
 	var updatedItems = getUpdatedItems(['USER_NAME'], sysData, jsonInput, { 'staffsI18NModels': 'LANG_ID'}, ['USER_PROFILE']);
 	logDebug("updatedItems.length: " + updatedItems.length);
+//	timeDebug("After get the updated Items");
+	
+	sql1Params = null;
+	sql2ParamsA = null;
+	sql2ParamsI = null;
 	
 	for (var u in updatedItems) {
 		var uItem = updatedItems[u];
 		searchObj['USER_NAME'] = uItem['USER_NAME'];
 		uItem['staffsModel']['USER_NAME'] = uItem['USER_NAME'];
-		var exItem = ConfigEngineAPI.searchUsers(uItem['USER_NAME'], false)[0];
+//		timeDebug("Loop updatedItems #1");
+//		var exItem = ConfigEngineAPI.searchUsers(uItem['USER_NAME'], false)[0];
+		var exItem = sysData.filter(function (item) { return item['USER_NAME'] == uItem['USER_NAME'] ;})[0];
 		
-		logDebug('exItem Before: \n' + JSON.stringify(stringifyJSType(exItem)));
-
+//		logDebug('exItem Before: \n' + JSON.stringify(stringifyJSType(exItem)));
+//		timeDebug("Loop updatedItems #2");
 		var format = new java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		var date = new Date();
 		var dateStr = date.getFullYear() + '-' + (date.getMonth()+1) + "-" + date.getDay() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
 
-		
+//		timeDebug("Loop updatedItems #3");
 		
 		exItem["LAST_CHANGE_PASSWORD"] = isNullOrEmpty(exItem["LAST_CHANGE_PASSWORD"]) ? dateStr : format.parse(exItem["LAST_CHANGE_PASSWORD"]);
 		
-		
+//		timeDebug("Loop updatedItems #4");//Time91ms
 		exItem["LAST_LOGIN_TIME"] = isNullOrEmpty(exItem["LAST_LOGIN_TIME"]) ? dateStr : format.parse(exItem["LAST_LOGIN_TIME"]);
-
+//		timeDebug("Loop updatedItems #5");
 		for (var p in exItem) {
 			if (!subModels.hasOwnProperty(p)) {
 				if (uItem.hasOwnProperty(p)) {
@@ -1794,7 +2326,7 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 				}
 			}
 		}
-
+//		timeDebug("Loop updatedItems #6");
 
 		// userProfileModels
 //		var profiles = exItem["userProfileModels"];
@@ -1823,53 +2355,101 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 			
 			exItem["userProfileModels"].push(profile);
 		}
-		
-		logDebug('exItem After:: \n' + JSON.stringify(stringifyJSType(exItem)));
-
-		logDebug('fillDepartment....................');
+//		timeDebug("Loop updatedItems #7");
+//		logDebug('exItem After:: \n' + JSON.stringify(stringifyJSType(exItem)));
+//		timeDebug("Loop updatedItems #8");
+//		logDebug('fillDepartment....................');
 		// Department
 		fillDepartment(uItem);
-		logDebug('AfterfillDepartment....................');
-
+//		logDebug('AfterfillDepartment....................');
+//		timeDebug("Loop updatedItems #9");//time 101ms
 		// userSecurityModels
 		exItem['userSecurityModels'] = exItem['policyModel'];
-		
+//		timeDebug("Loop updatedItems #10");
 		try{
 			exItem['userSecurityModels'][0]["DATA1"] = "AGIS=" + uItem["AGIS"] + ";" + "AMO=" + uItem["AMO"] + ";" + "AW=" + uItem["AW"] + ";" + "DUMMYUSER=" + uItem["DUMMYUSER"]
 		}catch(e){
 			logDebug('Error setting exItem["userSecurityModels"][0]["DATA1"]: ' + e);
 		}
-		
+//		timeDebug("Loop updatedItems #11");
 		//Fill Names
 		exItem['DISP_NAME'] = uItem['DISP_NAME'];
 		exItem['FNAME'] = uItem['FNAME'];
 		exItem['GA_USER_ID'] = uItem['GA_USER_ID'];
 		exItem['LNAME'] = uItem['LNAME'];
 		exItem['MNAME'] = uItem['MNAME'];
-		
-		logDebug('exItem After: \n' + JSON.stringify(stringifyJSType(exItem)));
-		
+//		timeDebug("Loop updatedItems #11");//Time 99ms
+//		logDebug('exItem After: \n' + JSON.stringify(stringifyJSType(exItem)));
+//		logDebug('uItem After: \n' + JSON.stringify(stringifyJSType(uItem)));
+//		timeDebug("Loop updatedItems #12");
 		// Do update...
-		conf.className = 'com.accela.orm.model.common.UserModel'
-		resArr = resArr.concat(conf.update(searchObj, exItem, subModels, true));
+		conf.className = 'com.accela.orm.model.common.UserModel';
+//		resArr = resArr.concat(conf.update(searchObj, exItem, subModels, true));
+		resArr = resArr.concat(conf.update(null, exItem, subModels, true));
 		// Update staffsModel for i18
 		updateStaffsModel(uItem['staffsModel']);
+//		timeDebug("Loop updatedItems #13");//Time 209ms
+//		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME = '" + uItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR = 28";
+//		conf.updateBySQL(sql1);
 		
-		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME = '" + uItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR = 28";
-		conf.updateBySQL(sql1);
+		if(sql1Params == null){
+			sql1Params = "'" + exItem['USER_NAME'] + "'";
+		}else{
+			sql1Params += ",'" + exItem['USER_NAME'] + "'";
+		}
+		
 		//update Active InActive Manually
 		var activeInActive = !isNullOrEmpty(uItem['USER_PROFILE']) && !isNullOrEmpty(uItem['USER_PROFILE']['ACTIVE']) && (uItem['USER_PROFILE']['ACTIVE'] == true || uItem['USER_PROFILE']['ACTIVE'] == 'true') ? 'A' : 'I';
-		var sql = "update PUSER_PROFILE set REC_STATUS = '" + activeInActive + "' WHERE USER_NAME = '" + uItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
-		conf.updateBySQL(sql);
+//		timeDebug("Loop updatedItems #14");
+		if(activeInActive == 'A'){
+			if(sql2ParamsA == null){
+				sql2ParamsA = "'" + exItem['USER_NAME'] + "'";
+			}else{
+				sql2ParamsA += ",'" + exItem['USER_NAME'] + "'";
+			}
+		}else{
+			if(sql2ParamsI == null){
+				sql2ParamsI = "'" + exItem['USER_NAME'] + "'";
+			}else{
+				sql2ParamsI += ",'" + exItem['USER_NAME'] + "'";
+			}
+		}
+//		timeDebug("Loop updatedItems #15");//Time 99ms
+//		var sql = "update PUSER_PROFILE set REC_STATUS = '" + activeInActive + "' WHERE USER_NAME = '" + uItem['USER_NAME'] + "' AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+//		conf.updateBySQL(sql);
 	}
-
+//	timeDebug("After Loop updatedItems #1");
+	
+	if(sql1Params != null){
+		var sql1 = "update PUSER_PROFILE set REC_STATUS = 'Y' WHERE USER_NAME in (" + sql1Params + ") AND PROFILE_SEQ_NBR = 28";
+		conf.updateBySQL(sql1);
+	}
+//	timeDebug("After Loop updatedItems #2");
+	
+	if(sql2ParamsA != null){
+		var sql2A = "update PUSER_PROFILE set REC_STATUS = 'A' WHERE USER_NAME in (" + sql2ParamsA + ") AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+		conf.updateBySQL(sql2A);
+	}
+//	timeDebug("After Loop updatedItems #3");
+	
+	if(sql2ParamsI != null){
+		var sql2I = "update PUSER_PROFILE set REC_STATUS = 'I' WHERE USER_NAME in (" + sql2ParamsI + ") AND PROFILE_SEQ_NBR IN (7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,27)";
+		conf.updateBySQL(sql2I);
+	}
+//	timeDebug("After Loop updatedItems #4");
+	
 	// Update groups
+	var userGroupMapping = [];
 	for (var i in jsonInput) {
 		var user = jsonInput[i]
 		var groups = user['GROUPS'].split(',')
-		updateUserGroups(user['USER_NAME'], groups)
+		userGroupMapping = userGroupMapping.concat(updateUserGroups(user['USER_NAME'], groups));
+	}
+	if(userGroupMapping.length > 0){
+		conf.create("BATCH", userGroupMapping, {}, false);
 	}
 	
+//	timeDebug("After Loop updatedItems #5");
 	var sql = "UPDATE XPOLICY SET STATUS = 'Y' " +
 	"WHERE 1=1 " +
 	"AND SERV_PROV_CODE = '" + serviceProvidorCode + "' " +
@@ -1878,7 +2458,7 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 	"AND STATUS = 'A' ";
 	
 	conf.updateBySQL(sql);
-	
+//	timeDebug("After Loop updatedItems #6");//Time 93ms
 	sql = "UPDATE XPOLICY " +
 		"SET DATA1 = 'AGIS=Y;AMO=Y;AW=N;DUMMYUSER=N' " +
 		"WHERE 1=1 " +
@@ -1888,9 +2468,9 @@ ConfigEngineAPI.updateUsers = function (jsonInput, serviceProvidorCode, override
 		"AND LEVEL_DATA NOT LIKE 'PUBLICUSER%'";
 	
 	conf.updateBySQL(sql);
-
+//	timeDebug("After Loop updatedItems #7");
 	var result = resArr.filter(function (r) { return r.exists == true }).length > 0 ? { 'success': true, 'exists': true } : { 'success': true, 'exists': false };
-	
+//	timeDebug("After Loop updatedItems #8");//Time 98ms
 	return result;
 }
 
@@ -1899,12 +2479,13 @@ function fillDepartment(item) {
 	logDebug('item["DEPARTMENT"]: ' + item["DEPARTMENT"]);
 	
 	var dSearchObj = item["DEPARTMENT"];
-
-	var dept = ConfigEngineAPI.searchDepartmentByDepName(dSearchObj, true)[0];
-	logDebug('dept: ' + dept);
-	logDebug('JSON.stringify(stringifyJSType(dept)): ' + JSON.stringify(stringifyJSType(dept)));
 	
 	try{
+		var dept = ConfigEngineAPI.searchDepartmentByDepName(dSearchObj, true);
+		
+		logDebug('dept: ' + dept);
+		logDebug('JSON.stringify(stringifyJSType(dept)): ' + JSON.stringify(stringifyJSType(dept)));
+		
 		item["staffsModel"]["GA_AGENCY_CODE"] = dept["R3_AGENCY_CODE"];
 		item["staffsModel"]["GA_BUREAU_CODE"] = dept["R3_BUREAU_CODE"];
 		item["staffsModel"]["GA_DIVISION_CODE"] = dept["R3_DIVISION_CODE"];
@@ -1912,6 +2493,7 @@ function fillDepartment(item) {
 		item["staffsModel"]["GA_GROUP_CODE"] = dept["R3_GROUP_CODE"];
 		item["staffsModel"]["GA_OFFICE_CODE"] = dept["R3_OFFICE_CODE"];
 	}catch(e){
+		logDebug('Error Getting Department: ' + e);
 		item["staffsModel"]["GA_AGENCY_CODE"] = "";
 		item["staffsModel"]["GA_BUREAU_CODE"] = "";
 		item["staffsModel"]["GA_DIVISION_CODE"] = "";
@@ -1921,6 +2503,9 @@ function fillDepartment(item) {
 	}
 	
 }
+
+var staffModelExistingItems = null;
+
 function updateStaffsModel(item) {
 	logDebug('updateStaffsModel::item:: \n' + JSON.stringify(stringifyJSType(item)));
 	var subModels = {
@@ -1931,11 +2516,21 @@ function updateStaffsModel(item) {
 
 	logDebug("item['USER_NAME']: " + item['USER_NAME']);
 		
-	var searchObj = {
-		'USER_NAME': item['USER_NAME']
-	};
+	var searchObj;// = { 'USER_NAME': item['USER_NAME'] };
+	
+	if(staffModelExistingItems == null){
+		staffModelExistingItems = {};
+		var searchObj = {'SERV_PROV_CODE': ""};
+		var result = conf.search(searchObj, true, true, false, true);
+		for(var r in result){
+			if(result[r]["USER_NAME"] != null && result[r]["USER_NAME"] != undefined){
+				staffModelExistingItems[result[r]["USER_NAME"]] = result[r]; 
+			}
+		}
+	}
 
-	var exItem = conf.search(searchObj, true, true, false, true)[0];
+//	var exItem = conf.search(searchObj, true, true, false, true)[0];
+	var exItem = staffModelExistingItems[item['USER_NAME']];
 	logDebug('updateStaffsModel::exItem:: \n' + JSON.stringify(stringifyJSType(exItem)));
 	
 	if(exItem == null || exItem == undefined){
@@ -1968,6 +2563,7 @@ function updateStaffsModel(item) {
 		}
 	}
 	
+	searchObj = { 'USER_NAME': item['USER_NAME'] };
 	conf.update(searchObj, exItem, subModels, true)
 }
 
@@ -2105,21 +2701,21 @@ function updateUserGroups(userName, groups) {
 		}
 		usersGroupsModels.push(model)
 	}
-	ConfigEngineAPI.updateUsersGroupsMapping(usersGroupsModels, { 'USER_NAME': userName })
+	return ConfigEngineAPI.getUpdateUsersGroupsMappingList(usersGroupsModels, { 'USER_NAME': userName });
 }
 
 ConfigEngineAPI.updateUsersGroupsMapping = function (jsonInput, searchObj) {
 	if (!Array.isArray(jsonInput)) {
 		jsonInput = [jsonInput];
 	}
-	
+
 	var sysData = ConfigEngineAPI.getUsersGroupsMapping(false, searchObj)
 
 	searchObj = { 'GROUP_SEQ_NBR': '', 'USER_NAME': '' }
 	var subModels = {}
 
 	var keys = ['USER_NAME', 'MODULE_NAME', 'DISP_TEXT']
-	var deletedItems = getDeletedItems(keys, sysData, jsonInput)
+	var deletedItems = getDeletedItems(keys, sysData, jsonInput);
 
 	if (deletedItems.length > 0) {
 		for (var d in deletedItems) {
@@ -2133,41 +2729,88 @@ ConfigEngineAPI.updateUsersGroupsMapping = function (jsonInput, searchObj) {
 
 	var createdItems = getCreatedItems(keys, sysData, jsonInput)
 	for (var c in createdItems) {
-		var cItem = createdItems[c]
-		var group = ConfigEngineAPI.searchAgencyGroup(cItem['MODULE_NAME'], cItem['DISP_TEXT'], true)[0]
+		var cItem = createdItems[c];
+		
+		var group = ConfigEngineAPI.searchAgencyGroup(cItem['MODULE_NAME'], cItem['DISP_TEXT'], true)[0];
+
 		cItem['GROUP_SEQ_NBR'] = group['GROUP_SEQ_NBR']
 		searchObj['GROUP_SEQ_NBR'] = cItem['GROUP_SEQ_NBR']
 		searchObj['USER_NAME'] = cItem['USER_NAME']
 		conf.className = 'com.accela.orm.model.user.UserGroupModel'
 		conf.create(searchObj, cItem, subModels, false)
 	}
-	
 	return { 'success': true, 'exists': false };
 }
 
+ConfigEngineAPI.getUpdateUsersGroupsMappingList = function (jsonInput, searchObj) {
+	if (!Array.isArray(jsonInput)) {
+		jsonInput = [jsonInput];
+	}
+
+	var sysData = ConfigEngineAPI.getUsersGroupsMapping(false, searchObj)
+
+	searchObj = { 'GROUP_SEQ_NBR': '', 'USER_NAME': '' }
+	var subModels = {}
+
+	var keys = ['USER_NAME', 'MODULE_NAME', 'DISP_TEXT']
+	var deletedItems = getDeletedItems(keys, sysData, jsonInput);
+
+	if (deletedItems.length > 0) {
+		conf.Delete(deletedItems, subModels);
+	}
+
+	var createdItems = getCreatedItems(keys, sysData, jsonInput)
+	for (var c in createdItems) {
+		var cItem = createdItems[c];
+		
+		var group = ConfigEngineAPI.searchAgencyGroup(cItem['MODULE_NAME'], cItem['DISP_TEXT'], true)[0];
+
+		cItem['GROUP_SEQ_NBR'] = group['GROUP_SEQ_NBR'];
+		searchObj['GROUP_SEQ_NBR'] = cItem['GROUP_SEQ_NBR'];
+		searchObj['USER_NAME'] = cItem['USER_NAME'];
+		conf.className = 'com.accela.orm.model.user.UserGroupModel';
+		
+		createdItems[c] = cItem;
+	}
+	return createdItems;
+}
+
+var departmentList = null;
 ConfigEngineAPI.searchDepartmentByDepName = function (code, ignoreSubModels) {
 	logDebug('ConfigEngineAPI.searchDepartment............');
 	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
 	
-	conf.className = "com.accela.orm.model.user.DepartMentTypeModel";
-	
-	var searchObj = {"R3_DEPTNAME": String(code)};
-	
-	conf.subModels = {
-			"bureauModel": {},
-			"divisionModel": {},
-			"dpttyI18NModels": {},
-			"groupModel": {},
-			"officeModel": {},
-			"organizationAgencyModel": {
-				"agencyI18NModels": {},
+	if(departmentList == null){
+		logDebug("departmentList IS null");
+		conf.className = "com.accela.orm.model.user.DepartMentTypeModel";
+		
+	//	var searchObj = {"R3_DEPTNAME": String(code)};
+		var searchObj = {"SERV_PROV_CODE": ""};
+		
+		conf.subModels = {
+				"bureauModel": {},
+				"divisionModel": {},
+				"dpttyI18NModels": {},
+				"groupModel": {},
+				"officeModel": {},
+				"organizationAgencyModel": {
+					"agencyI18NModels": {},
+					"auditModel": {}
+				},
+				"sectionModel": {},
 				"auditModel": {}
-			},
-			"sectionModel": {},
-			"auditModel": {}
-	};
+		};
+		
+		var result = conf.search(searchObj, true, ignoreSubModels, true, true);
+		departmentList = {};
+		for(var r in result){
+			departmentList[result[r]["R3_DEPTNAME"]] = result[r]; 
+		}
+	}else{
+		logDebug("departmentList IS NOT null");
+	}
 	
-	return conf.search(searchObj, true, ignoreSubModels, true, true);
+	return departmentList[String(code)];
 }
 
 /* ------------------------------------------------------------------------------------------------------/
@@ -2555,10 +3198,12 @@ ConfigEngineAPI.searchStandaredCondition = function(code, conditionType, ignoreS
 	var searchObj = {"SERV_PROV_CODE": String(code), "R3_CON_TYPE": String(conditionType)};
 	
 	conf.subModels = {
-//			"conditionDetail": {},
-			"conditionGroupItem": {},
-			"conditionI18NModels": {},
-			"conditionTypeItem": {}
+			"conditionDetail": {
+				"conditionDetailI18NModels": {}
+			},
+//			"conditionGroupItem": {},
+//			"conditionI18NModels": {},
+//			"conditionTypeItem": {}
 //			,"conditionTypeModel": {}
 		};
 	
@@ -2572,10 +3217,12 @@ ConfigEngineAPI.createStandaredCondition = function(jsonInput, code, conditionTy
 	conf.className = "com.accela.orm.model.condition.RefStdConditionModel";
 	
 	var subModels = {
-//			"conditionDetail": {},
-			"conditionGroupItem": {},
-			"conditionI18NModels": {},
-			"conditionTypeItem": {}
+			"conditionDetail": {
+				"conditionDetailI18NModels": {}
+			},
+//			"conditionGroupItem": {},
+//			"conditionI18NModels": {},
+//			"conditionTypeItem": {}
 //			,"conditionTypeModel": {}
 		};
 	
@@ -2583,11 +3230,42 @@ ConfigEngineAPI.createStandaredCondition = function(jsonInput, code, conditionTy
 		jsonInput = [jsonInput];
 	}
 	
+	var currentData = ConfigEngineAPI.searchStandaredCondition(code, conditionType, false);
+	var currentR3_CON_NBR = [];
+	logDebug('currentData.length: ' + currentData.length);
+	for(var c in currentData){
+		currentR3_CON_NBR.push(currentData[c]["R3_CON_NBR"]);
+	}
+	
+	logDebug('currentR3_CON_NBR: ' + currentR3_CON_NBR);
+	
+	var deleteSql = "delete from B6CONDIT_DETAIL WHERE B1_CON_NBR in (select B1_CON_NBR from B6CONDIT WHERE R3_CON_NBR in (" + currentR3_CON_NBR + "))";
+	logDebug('deleteSql: ' + deleteSql);
+	conf.deleteBySQL(deleteSql, null);
+	
+	deleteSql = "delete from XCONDIT_STATYP WHERE B1_CON_NBR in (select B1_CON_NBR from B6CONDIT WHERE R3_CON_NBR in (" + currentR3_CON_NBR + "))";
+	logDebug('deleteSql: ' + deleteSql);
+	conf.deleteBySQL(deleteSql, null);
+	
+	deleteSql = "delete from B6CONDIT WHERE R3_CON_NBR in (" + currentR3_CON_NBR + ")";
+	logDebug('deleteSql: ' + deleteSql);
+	conf.deleteBySQL(deleteSql, null);
+	
 	var jsonInputOrg = JSON.parse(JSON.stringify(jsonInput));//Clone Object
 	
 	logDebug('jsonInput.length: ' + jsonInput.length);
 	
 	var searchObj = {"SERV_PROV_CODE": String(code), "R3_CON_TYPE": String(conditionType)};
+	
+	var sequenceGeneratorEJB = new com.accela.sequence.SequenceGeneratorEJB();
+	
+	for(var j in jsonInput){
+		var newSeq = sequenceGeneratorEJB.getNextValue("R3CLEART_SEQ");
+		logDebug('newSeq:: ' + newSeq);	
+		newSeq++;
+		logDebug('newSeq++:: ' + newSeq);
+		jsonInput[j]["conditionDetail"]["R3_CON_NBR"] = newSeq;
+	}
 	
 	var result = conf.create(searchObj, jsonInput, subModels, overrideExisting);
 	
@@ -2608,6 +3286,27 @@ ConfigEngineAPI.searchStandaredCommentsGroup = function(code, ignoreSubModels){
 		};
 	
 	return conf.search(searchObj, true, ignoreSubModels, false, true);
+}
+
+var StandaredCommentsGroup = null;
+ConfigEngineAPI.searchStandaredCommentsGroup_commentTypeModels = function(code, groupName, ignoreSubModels){
+	logDebug('ConfigEngineAPI.searchStandaredCommentsGroup_commentTypeModels............');
+	
+	if(StandaredCommentsGroup == null){
+		var tmp_StandaredCommentsGroup = ConfigEngineAPI.searchStandaredCommentsGroup(code, ignoreSubModels);
+		StandaredCommentsGroup = [];
+		for(var scg in tmp_StandaredCommentsGroup){
+			StandaredCommentsGroup[tmp_StandaredCommentsGroup[scg]["G6_GROUP_NAME"]] = tmp_StandaredCommentsGroup[scg];
+		}
+	}
+	
+	var commentTypeModels = [];
+	try{
+		commentTypeModels = StandaredCommentsGroup[groupName]["commentTypeModels"];
+	}catch(e){
+		commentTypeModels = [];
+	}
+	return commentTypeModels;
 }
 
 ConfigEngineAPI.searchStandaredCommentsRelation = function(code, commentType){
@@ -2657,31 +3356,66 @@ ConfigEngineAPI.createStandaredComments = function(jsonInput, code, overrideExis
 	logDebug('ConfigEngineAPI.createStandaredComments............');
 	overrideExisting = overrideExisting == undefined || overrideExisting == 'False' ? false : overrideExisting;
 	
-	if(!overrideExisting){
-		logDebug('Returning: {"success": false, "exists": true}');
-		return {
-			"success": false,
-			"exists": true
-		};
-	}
+//	if(!overrideExisting){
+//		logDebug('Returning: {"success": false, "exists": true}');
+//		return {
+//			"success": false,
+//			"exists": true
+//		};
+//	}
 	
-	conf.className = "com.accela.orm.model.stdcomment.StandardCommentModel";
+//	timeDebug("getting sysData");
+	var sysData = ConfigEngineAPI.searchStandaredComments(code);
+//	timeDebug("After getting sysData");
 	
-	var subModels = {
-		};
+	var updatedItems = getUpdatedItemsByFields(['G6_DOC_ID'], sysData, jsonInput, ['G6_NAME', 'G6_COMMENT', { 'standardCommentI18NModels': 'G6_COMMENT' }]);
+	logDebug('Number of updated Items: ' + updatedItems.length);
+//	timeDebug('Number of updated Items: ' + updatedItems.length);
 	
-	if (!Array.isArray(jsonInput)) {
-		jsonInput = [jsonInput];
-	}
+	var createdItems = getCreatedItems(['G6_DOC_ID'], sysData, jsonInput);
+	logDebug('Number of created Items: ' + createdItems.length);
+//	timeDebug('Number of created Items: ' + createdItems.length);//100
 	
 	var resArr = [];
 	
-	logDebug('jsonInput.length: ' + jsonInput.length);
+	conf.className = "com.accela.orm.model.stdcomment.StandardCommentModel";
 	
-	var searchObj = {"SERV_PROV_CODE": String(code)};
+	var subModels = {"standardCommentI18NModels": {}};
 	
-	resArr = resArr.concat(conf.create(searchObj, jsonInput, subModels, overrideExisting));
+//	timeDebug("calling update");
+	if(updatedItems != null && updatedItems.length > 0){
+		for(var u in updatedItems){
+			searchObj = {"SERV_PROV_CODE": String(code), 'G6_DOC_ID': updatedItems[u]['G6_DOC_ID'] };
+			resArr = resArr.concat(conf.update(searchObj, updatedItems[u], subModels, true));
+		}
+	}
+//	timeDebug("after calling update");
 	
+//	timeDebug("calling create");
+	var sequenceGeneratorEJB = new com.accela.sequence.SequenceGeneratorEJB();
+	if(createdItems != null && createdItems.length > 0){
+		
+//		timeDebug("setting sequences");
+		for(var c in createdItems){
+			
+			newSeq = sequenceGeneratorEJB.getNextValue("STCOMMNT_RES_SEQ");
+			logDebug('newSeq:::: ' + newSeq);
+			createdItems[c]["RES_ID"] = newSeq;
+			for(var cc in createdItems[c]["standardCommentI18NModels"]){
+				createdItems[c]["standardCommentI18NModels"][cc]["RES_ID"] = newSeq; 
+			}
+			
+//			searchObj = { "SERV_PROV_CODE": String(code), 'G6_DOC_ID': createdItems[c]['G6_DOC_ID'] };
+//			var createdItemResult = conf.create(searchObj, createdItems[c], subModels, overrideExisting, false, false);
+//			logDebug('createdItemResult:: ' + createdItemResult);
+		}//2657ms
+//		timeDebug("Finish setting sequences");
+		
+		var createdItemResult = conf.create("BATCH", createdItems, subModels, overrideExisting);
+		logDebug('createdItemResult:: ' + createdItemResult);
+	}
+//	timeDebug("After calling create");//25188
+
 	var standaredCommentsGroups = {};
 	
 	for(var s in jsonInput){
@@ -2704,7 +3438,9 @@ ConfigEngineAPI.createStandaredComments = function(jsonInput, code, overrideExis
 		
 		var commentTypeModels = stdCommentsGroup["commentTypeModels"];
 		if(commentTypeModels == null || commentTypeModels == undefined){
-			commentTypeModels = [];
+//			commentTypeModels = [];
+			
+			commentTypeModels = ConfigEngineAPI.searchStandaredCommentsGroup_commentTypeModels(String(code), G6_GROUP_NAME, true)
 		}
 		
 		var found = false;
@@ -2737,7 +3473,7 @@ ConfigEngineAPI.createStandaredComments = function(jsonInput, code, overrideExis
 	}
 	
 	standaredCommentsGroups = jsonObjToJsonArr(standaredCommentsGroups);
-	printJson("standaredCommentsGroups", standaredCommentsGroups);
+//	printJson("standaredCommentsGroups", standaredCommentsGroups);
 	
 	
 	conf.className = "com.accela.orm.model.stdcomment.StandardCommentGroupModel";
@@ -2751,7 +3487,7 @@ ConfigEngineAPI.createStandaredComments = function(jsonInput, code, overrideExis
 		};
 	
 	try{
-		resArr = resArr.concat(conf.create(searchObj, standaredCommentsGroups, subModels, overrideExisting));
+		resArr = resArr.concat(conf.create(searchObj, standaredCommentsGroups, subModels, overrideExisting, true));
 	}catch(e){
 		for(var scg in standaredCommentsGroups){
 			searchObj = {"SERV_PROV_CODE": String(code), "G6_GROUP_NAME": standaredCommentsGroups[scg]["G6_GROUP_NAME"]};
@@ -2858,13 +3594,28 @@ ConfigEngineAPI.createActivitySpecificInfo = function(jsonInput, overrideExistin
 	return result;
 }
 
-ConfigEngineAPI.searchSharedDropDowns = function(code, keys, ignoreSubModels){
+ConfigEngineAPI.searchSharedDropDowns = function(code, keys, ignoreSubModels, type){
 	logDebug('ConfigEngineAPI.searchSharedDropDowns............');
 	ignoreSubModels = ignoreSubModels == undefined ? false : ignoreSubModels;
+	
+	var typeMap = {"System Switch": "SystemSwitch",
+		"Shared drop-down": "ShareDropDown",
+		"EMSE": "EMSE",
+		"Doc Virtual Folder": "DocVirtualFolder",
+		"Doc Review Status": "DocReviewStatus",
+		"Doc Status": "DocStatus"};
+	
+	logDebug('code: ' + code);
+	logDebug('type: ' + type);
 	
 	conf.className = "com.accela.orm.model.asi.SharedDropDownListModel";
 	
 	var searchObj = {"SERV_PROV_CODE": String(code)};
+	if(type != null && type != undefined && type != ''){
+		type = typeMap[type];
+		logDebug('type: ' + type);
+		searchObj = {"SERV_PROV_CODE": String(code), "STD_CHOICE_TYPE": String(type)};
+	}
 	
 	conf.subModels = {
 			"sharedDropDownValueModels": {
@@ -4713,340 +5464,3 @@ function printJson(title, json){
 		logDebug(title + "2: " + json);
 	}
 }
-
-//var jsonInput = [{"USER_NAME":"VELOSIMO","PASSWORD":"","ACCOUNT_DISABLE_PERIOD":"999","ALLOW_USER_CHANGE_PASSWORD":"Y","CASHIER_ID":"","CHANGE_PASSWORD_NEXT_LOGIN":"N","DAILY_INSP_UNITS":"","DISTINGUISH_NAME":"","EMPLOYEE_ID":"","INSPECTOR_STATUS":"","LOCKED":"N","GROUPS":"Building::Admin","PASSWORD_EXPIRE_TIMEFRAME":"999","SECTION_508_FLAG":"","STATUS":"DISABLE","SUPERVISOR_FLAG":"","ACCESS_MODE":"","BILLING_RATE":"","AGIS":"N","AMO":"N","AW":"N","DUMMYUSER":"N","DISP_INITIALS":"","DEPARTMENT":"Building Department","DEFAULT_MODULE":"Building","staffsModel":{"GA_EMAIL":"","GA_EMPLOY_PH1":"","GA_PREFERRED_CHANNEL":"","GA_TITLE":"","GA_FNAME":"","GA_MNAME":"","GA_LNAME":"","GA_INITIAL":"","GA_USER_ID":"VELOSIMO","staffsI18NModels":[]},"DISP_NAME":"","FNAME":"","GA_USER_ID":"VELOSIMO","LNAME":"","MNAME":""}];
-//var result = ConfigEngineAPI.getAllUsers(false); 
-//pm(result, true);
-//var result = '';
-//try{
-//	result = ConfigEngineAPI.updateUsers(jsonInput, 'PS05', true);
-//}catch(e){
-//	aa.print('ERRR::: ' + e);
-//}
-//var result = ConfigEngineAPI.getAllPublicUsers();
-//var result = ConfigEngineAPI.searchContacts('ADMA');
-//var result = ConfigEngineAPI.searchContactsList('ADMA');
-//var result = ConfigEngineAPI.searchAllContacts('ADMA', true);
-//var result = ConfigEngineAPI.searchPublicUserBySeqNumber('', false);
-
-//var result = ConfigEngineAPI.searchCalendars('ADMA', false);
-//var result = ConfigEngineAPI.updateCalendars(jsonInput, 'ADMA', true);
-
-//var jsonInput = ConfigEngineAPI.searchPublicUsers('ADMA');
-//aa.print(ConfigEngineAPI.getContactNameById('666'));
-
-//................................................
-//var jsonInput = ConfigEngineAPI.searchAllPublicUsers('ADMA', false);
-//aa.print('jsonInput: \n' + JSON.stringify(stringifyJSType(jsonInput)));
-//aa.print('result: \n' + JSON.stringify(stringifyJSType(result)));
-
-//................................................
-//var user = {};
-//
-//user["ACCOUNT_DISABLE_PERIOD"] = null;
-//user["ALLOW_USER_CHANGE_PASSWORD"] = null;
-//user["CASHIER_ID"] = null;
-//user["CHANGE_PASSWORD_NEXT_LOGIN"] = null;
-//user["CONTRACT_ID"] = null;
-//user["DAILY_INSP_UNITS"] = null;
-//user["DISP_NAME"] = "Public User";
-//user["DISTINGUISH_NAME"] = null;
-//user["EMPLOYEE_ID"] = null;
-//user["FNAME"] = null;
-//user["GA_USER_ID"] = "732";
-//user["INSPECTOR_STATUS"] = null;
-//user["INTEGRATED_FLAG"] = null;
-//user["LAST_CHANGE_PASSWORD"] = null;
-//user["LAST_LOGIN_TIME"] = null;
-//user["LDAP_ALIAS"] = null;
-//user["LNAME"] = null;
-//user["LOCKED"] = null;
-//user["LOCKEDTIME"] = null;
-//user["LOGINFAILCOUNT"] = null;
-//user["MNAME"] = null;
-//user["PASSWORD"] = 'SHA-512:0807185e26381a5c78d1cd70ddf208fe0657a1255d4b36a95a0529f9991256f1472a303314430542cb6fda1cdface665b406ece8ba47741efc2b0035fc5dfb4f657df75cf89e7c0e5f';
-//user["PASSWORD_EXPIRE_TIMEFRAME"] = null;
-//user["PIN_NBR"] = null;
-//user["REC_LOCK"] = null;
-//user["REC_SECURITY"] = null;
-//user["SECTION_508_FLAG"] = null;
-//user["SERV_PROV_CODE"] = "ADMA";
-//user["STATUS"] = "ENABLE";
-//user["SUPERVISOR_FLAG"] = null;
-//user["USER_NAME"] = "PUBLICUSER732",
-//user["USER_SEQ_NBR"] = null;
-//
-//var subModels = {};
-//conf.className = 'com.accela.orm.model.common.UserModel';
-//searchObj = { 'USER_NAME': 'PUBLICUSER732' };
-//
-//var isGenerator = false;
-//var rcpu = conf.create(searchObj, user, subModels, true, false, false, isGenerator);
-//logDebug('rcpu:: ' + rcpu);
-
-//................................................
-//conf.className = 'com.accela.orm.model.user.StaffsModel';
-//var subModels = {
-//	'staffsI18NModels': { 'ISLANG': true }
-//}
-//var searchObj = {
-//	'USER_NAME': 'PUBLICUSER628'
-//};
-//var exItem = conf.search(searchObj, true, true, false, true)[0];
-//logDebug('updateStaffsModel::exItem:: \n' + JSON.stringify(stringifyJSType(exItem)));
-//................................................
-
-//var staff = {};
-//
-//
-//staff["GA_AGENCY_CODE"] = "ADMA";
-//staff["GA_BUREAU_CODE"] = "ADMA";
-//staff["GA_DIVISION_CODE"] = "PUBLIC";
-//staff["GA_EMAIL"] = "mhashaikeh_test1@accela.com";
-//staff["GA_EMPLOY_CLASS_DES"]= null;
-//staff["GA_EMPLOY_PH1"]= null;
-//staff["GA_EMPLOY_PH2"]= null;
-//staff["GA_EMPLOY_TYPE_DES"]= null;
-//staff["GA_FAX"]= null;
-//staff["GA_FNAME"] = "mhashaikeh_test_1";
-//staff["GA_GROUP_CODE"] = "NA";
-//staff["GA_ID_NUM"]= null;
-//staff["GA_INITIAL"]= null;
-//staff["GA_IVR_PIN"]= null;
-//staff["GA_IVR_SEQ"]= null;
-//staff["GA_LNAME"]= null;
-//staff["GA_LOCKING_PRIV"]= null;
-//staff["GA_MNAME"]= null;
-//staff["GA_OFFICE_CODE"] = "NA";
-//staff["GA_PASSWORD_EXPIR_DT"]= null;
-//staff["GA_PREFERRED_CHANNEL"]= null;
-//staff["GA_RATE1"]= null;
-//staff["GA_RATE2"]= null;
-//staff["GA_RATE3"]= null;
-//staff["GA_SECTION_CODE"] = "NA";
-//staff["GA_STAFF_STATUS"]= null;
-//staff["GA_SUBGROUP_CODE"]= null;
-//staff["GA_SUFFIX"]= null;
-//staff["GA_TITLE"]= null;
-//staff["GA_USER_ID"] = "732";
-//staff["RES_ID"]= null;
-//staff["SERV_PROV_CODE"] = "ADMA";
-//staff["USER_NAME"] = "PUBLICUSER732";
-//staff["staffsI18NModels"] = null;
-//
-//conf.className = 'com.accela.orm.model.user.StaffsModel';
-//var subModels = {
-//	'staffsI18NModels': { 'ISLANG': true }
-//}
-//var searchObj = {
-//	'USER_NAME': 'PUBLICUSER628'
-//};
-//
-//var isGenerator = false;
-//var rcpu = conf.create(searchObj, staff, subModels, true, false, false, isGenerator);
-//logDebug('rcpu:: ' + rcpu);
-
-//................................................
-
-//var subModels = {};
-//conf.className = 'com.accela.orm.model.common.UserProfileModel';
-//var searchObj = { "USER_NAME": "mhashaikeh" };
-//var exItem = conf.search(searchObj, true, false, false, false, false);
-//
-//
-//logDebug('updateStaffsModel::exItem:: \n' + JSON.stringify(stringifyJSType(exItem)));
-//................................................
-
-//PublicUserAgencyModel
-//var pUserAgencyModel = {};
-//
-//
-//pUserAgencyModel["USER_SEQ_NBR"] = "732";
-//pUserAgencyModel["SERV_PROV_CODE"] = "ADMA";
-//pUserAgencyModel["USER_NAME"] = "PUBLICUSER732";
-//pUserAgencyModel["AGENCY_PIN"]= null;
-//pUserAgencyModel["USER_PIN"]= null;
-//pUserAgencyModel["STATUS"]= null;
-//pUserAgencyModel["DEFAULT_AGENCY"]= null;
-//
-//conf.className = 'com.accela.orm.model.user.PublicUserAgencyModel';
-//var subModels = {
-//	'staffsI18NModels': { 'ISLANG': true }
-//}
-//var searchObj = {
-//	'USER_NAME': 'PUBLICUSER628'
-//};
-//
-//var isGenerator = true;
-//var rcpu = conf.create(searchObj, pUserAgencyModel, subModels, true, false, false, isGenerator);
-//logDebug('rcpu:: ' + rcpu);
-//................................................
-
-//var subModels = {};
-//conf.className = 'com.accela.orm.model.user.PublicUserQuestionModel';
-//var searchObj = { "USER_SEQ_NBR": "733" };
-//var exItem = conf.search(searchObj, true, false, false, false, false);
-//
-//
-//logDebug('exItem:: \n' + JSON.stringify(stringifyJSType(exItem)));
-//................................................
-
-//var publicUserQuestionModel = {};
-//
-//publicUserQuestionModel["QUESTION"] = "Test 733 Question";
-//publicUserQuestionModel["ANSWERS"] = "Test 733 Answer";
-//publicUserQuestionModel["SORT_ORDER"] = "1";
-//publicUserQuestionModel["USER_SEQ_NBR"] = "733";
-//
-//var subModels = {};
-//conf.className = 'com.accela.orm.model.user.PublicUserQuestionModel';
-//var searchObj = { "USER_SEQ_NBR": "733" };
-//
-//var isGenerator = true;
-//var result = conf.create(searchObj, publicUserQuestionModel, subModels, true, false, false, isGenerator);
-//logDebug('result:: ' + JSON.stringify(stringifyJSType(result)));
-
-//................................................
-//conf.className = 'com.accela.orm.model.user.PublicUserAPORelationModel';
-//var searchObj = { "USER_SEQ_NBR": "628", "ENT_TYPE": "REF_CONTACT" };
-//var staffsMod = conf.search(searchObj, true, true, false, true, true);
-//logDebug('staffsMod:: \n' + JSON.stringify(stringifyJSType(staffsMod)));
-//................................................ 
-
-//conf.className = 'com.accela.orm.model.contact.ReferenceContactModel';
-//var searchObj = { "SERV_PROV_CODE": "ADMA" };
-//var refContactModel = conf.search(searchObj, true, true, false, true, true);
-//logDebug('refContactModel:: \n' + JSON.stringify(stringifyJSType(refContactModel)));
-
-
-
-//................................................
-//var contacts = ["666", "755", "353", "22"];
-//var aporRelationalList = [];
-//
-//for(var c in contacts){
-//	var aporRelational = {};
-//	
-//	aporRelational["AGENCY"] = "ADMA";
-//	aporRelational["ENT_ID"] = contacts[c];
-//	aporRelational["ENT_TYPE"] = "REF_CONTACT";
-//	aporRelational["IS_ACCOUNT_OWNER"] = "Y";
-//	aporRelational["STATUS"] = "A";
-//	aporRelational["USER_SEQ_NBR"] = "742";
-//	
-//	aporRelationalList.push(aporRelational);
-//}
-//
-//conf.className = 'com.accela.orm.model.user.PublicUserAPORelationModel';
-//var searchObj = { "USER_SEQ_NBR": "742", "ENT_TYPE": "REF_CONTACT" };
-//var isGenerator = true;
-//var result = conf.create(searchObj, aporRelationalList, subModels, true, false, false, isGenerator);
-//logDebug('result:: ' + JSON.stringify(stringifyJSType(result)));
-
-//................................................ 
-
-//conf.className = 'com.accela.orm.model.user.PublicUserLicenseRelationModel';
-//var searchObj = { "USER_SEQ_NBR": "733" };
-//var publicUserLicenseRelationModel = conf.search(searchObj, true, true, false, true, true);
-//logDebug('publicUserLicenseRelationModel:: \n' + JSON.stringify(stringifyJSType(publicUserLicenseRelationModel)));
-
-
-//................................................ 
-
-//var licenses = ["652::Consultant", "66::Consultant"];
-////var licenses = ["77::Consultant"];
-//
-//var deleteSql = "delete from XPUBLIC_USER_PROV_LIC where USER_SEQ_NBR = 733";
-//conf.deleteBySQL(deleteSql, null);
-//
-//var insertSql = "INSERT INTO XPUBLIC_USER_PROV_LIC(IS_PRIMARY_LICENSE,ISSUED_BY_AGENCY,LIC_SEQ_NBR,LIC_TYPE,LICENSE_IMPORTED,REC_DATE,REC_FUL_NAM,REC_STATUS,SERV_PROV_CODE,STATUS,USER_SEQ_NBR) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
-//
-//for(var l in licenses){
-//	var licKey = licenses[l].split("::");
-//	var params = ["N", "Y", parseInt(licKey[0]), licKey[1], "Y", new java.util.Date(), 'ADMIN', 'A', "ADMA", "A", 733];
-//	conf.updateBySQL(insertSql, params);
-//}
-
-
-//................................................ 
-
-//var newSeq = ConfigEngineAPI.getPublicUserNewSequence();
-//aa.print('newSeq: ' + newSeq);
-
-//var jsonInput = [{"ACCOUNT_TYPE":"Citizen","ADDRESS1":null,"ADDRESS2":null,"ADDRESS3":null,"AUTH_AGENT_ID":null,"AUTH_SERV_PROV_CODE":null,"BIRTH_DATE":null,"BUSINESS_NAME":null,"CITY":null,"COUNTRY":null,"COUNTY":null,"DISPLAY_NAME":null,"EMAIL_ID":"mhashaikeh_test1@accela.com","ENABLE_PRINT":null,"FAX":null,"FAX_IDD":null,"FEDERAL_EMPLOYER_ID_NBR":null,"FNAME":null,"GENDER":null,"HINT":null,"HINT_CATEGORY":null,"LNAME":null,"MNAME":null,"NEED_CHANGE_PASSWORD":"N","OUR_SPAM":null,"PAGER":null,"PARTNER_SPAM":null,"PASSWORD":"","PASSWORD_EXPIR_DD":null,"PASSWORD_REQUEST_ANSWER":"test 1","PASSWORD_REQUEST_QUESTION":"test 1","PHONE_CELL":"782222222","PHONE_CELL_IDD":"962","PHONE_HOME":null,"PHONE_HOME_IDD":null,"PHONE_WORK":null,"PHONE_WORK_IDD":null,"PO_BOX":null,"PREF_CONTACT_CHNL":null,"PREF_PHONE":null,"RECEIVE_SMS":"Y","REGISTER_DATE":null,"ROLE_TYPE":null,"SALUTATION":null,"SOCIAL_SECURITY_NBR":null,"STATE":null,"STATUS":null,"USER_COMMENT":null,"USER_ID":"mhashaikeh_test_1","USER_SEQ_NBR":"","USER_TITLE":null,"UUID":null,"ZIP":null}];
-//var result = ConfigEngineAPI.updatePublicUsers(jsonInput, 'ADMA', true);
-
-//var result = ConfigEngineAPI.searchLicensedProfessionals('ADMA');
-//var result = ConfigEngineAPI.searchLicensedProfessionalsList('ADMA');
-//var result = ConfigEngineAPI.searchLicensedProfessional('648', true);
-//var result = ConfigEngineAPI.updateLicensedProfessionals(jsonInput, 'ADMA', true);
-
-//var result = ConfigEngineAPI.searchStandaredComments('ADMA', true);
-//var result = ConfigEngineAPI.searchStandaredCommentsGroup('ADMA', true);
-
-//var result = ConfigEngineAPI.searchCondition('ADMA', false);
-//var result = ConfigEngineAPI.createCondition(jsonInput, 'ADMA', true);
-//var result = ConfigEngineAPI.searchStandardCondition('ADMA', false);
-//var result = ConfigEngineAPI.searchStandardConditionByModelId('ADMA', false, '16665');
-//var result = ConfigEngineAPI.searchConditionStatus('ADMA', false);
-//var result = ConfigEngineAPI.createConditionStatus(jsonInput, 'ADMA', true);
-//var result = ConfigEngineAPI.searchStandaredCondition('ADMA', 'Plot Changed', false);
-
-//var result = ConfigEngineAPI.searchActivityType('ADMA', true);
-//var result = ConfigEngineAPI.createActivityType(jsonInput, 'ADMA', true);
-//var result = ConfigEngineAPI.searchActivitySpecificInfo('CORE_ACT_AUT', false);
-
-//var result = ConfigEngineAPI.searchUserProfile("ADMA", "MHASHAIKEH", true);
-
-//var keys = ["ADMA","CONTACT TYPE"];
-//var result = ConfigEngineAPI.searchSharedDropDowns("ADMA", keys, true);
-//var result = ConfigEngineAPI.searchSharedDropDowns("ADMA", [], true);
-
-//var result = ConfigEngineAPI.searchRenewalInfo("ADMA", false);
-//var result = ConfigEngineAPI.createRenewalInfo(jsonInput, true);
-
-//var result = ConfigEngineAPI.searchFeeItemsList("ADMA", true);
-
-//var result = ConfigEngineAPI.getAllTimeAccountGroups(false, true);
-//var result = ConfigEngineAPI.searchTimeAccountGroup('TAG_001', null);
-//var result = ConfigEngineAPI.getAllTimeTypesGroupsMapping();
-
-//var result = ConfigEngineAPI.searchDepartments("ADMA", true);
-//var result = ConfigEngineAPI.searchDepartment("ADMA", "ADMA/AA/HASHB/HDEV/HSEC/HGRP/HASHOFFC", true);
-//var result = ConfigEngineAPI.searchOrganizations("ADMA", true);
-//var result = ConfigEngineAPI.searchOrganizationsList("ADMA", true);
-//var result = ConfigEngineAPI.searchBureaus("ADMA", "AA", true);
-//var result = ConfigEngineAPI.searchBureauList("ADMA", "AA", true);
-//var result = ConfigEngineAPI.searchDivisions("ADMA", "HASH_ORG", true);
-//var result = ConfigEngineAPI.searchSections("ADMA", "AA", true);
-//var result = ConfigEngineAPI.searchGroups("ADMA", "AA", true);
-//var result = ConfigEngineAPI.searchOffices("ADMA", "AA", true);
-//var result = ConfigEngineAPI.createDivisions(jsonInput, true);
-
-//var result = ConfigEngineAPI.searchReports("ADMA", true);
-
-//aa.print('result.length: ' + result.length);
-//aa.print('Result:: ' + result);
-//aa.print('Result: \n' + JSON.stringify(stringifyJSType(result)));
-
-//aa.print('Result: \n' + JSON.stringify(result));
-
-//var result = ConfigEngineAPI.searchDepartmentByDepName('Administrator', true);
-
-//var result = ConfigEngineAPI.searchDepartments('PS05', true);
-//try{
-//	aa.print('Result: \n' + JSON.stringify(stringifyJSType(result)));
-//}catch(e){
-//	aa.print('ER2::: ' + e);
-//}
-//pm(result, true);
-//aa.print('result.length: ' + result.length);
-
-//var format = new java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-//var date = new Date();
-//var dateStr = date.getFullYear() + '-' + (date.getMonth()+1) + "-" + date.getDay() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
-//
-//aa.print('FORMAT: ' + format.parse(dateStr));
-//
-//conf.updateBySQL("update PUSER set LAST_CHANGE_PASSWORD = '" + dateStr + "' where LAST_CHANGE_PASSWORD is null");
-//conf.updateBySQL("update PUSER set LAST_LOGIN_TIME = '" + dateStr + "' where LAST_LOGIN_TIME is null");

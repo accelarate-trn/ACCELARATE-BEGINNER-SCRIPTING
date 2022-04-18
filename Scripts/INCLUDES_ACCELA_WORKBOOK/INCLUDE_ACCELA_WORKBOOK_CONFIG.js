@@ -662,10 +662,3 @@ function execute(){
 }
 
 
-//execute();
-//
-//var result = aa.env.getValue("RESULT"); 
-//aa.print('result JSON: ' + result);
-//aa.print(JSON.stringify(result));
-
-

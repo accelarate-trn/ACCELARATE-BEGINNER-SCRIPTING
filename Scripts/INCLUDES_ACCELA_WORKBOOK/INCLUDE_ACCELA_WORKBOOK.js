@@ -1294,15 +1294,15 @@ function cmd_createApplicationType(){
 	
 	json = toJson(json);
 	
-	var connectWithPF = false;
-	try{
-	logDebug("isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])::: " + isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA']));
-	if(!isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])){
-		connectWithPF = true;
-	}
-	}catch(e){
-		logDebug("ERR:R1_SMARTCHOICE_CODE_FOR_ACA: " + e);
-	}
+//	var connectWithPF = false;
+//	try{
+//		logDebug("isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])::: " + isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA']));
+//		if(!isEmpty(json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'])){
+//			connectWithPF = true;
+//		}
+//	}catch(e){
+//		logDebug("ERR:R1_SMARTCHOICE_CODE_FOR_ACA: " + e);
+//	}
 	
 	var result = ConfigEngineAPI.createApplicationType(json, override);
 	
@@ -1313,10 +1313,10 @@ function cmd_createApplicationType(){
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
 	
-	if(override == true && connectWithPF == true && result['success'] == true && result['exists'] == false){
-		logDebug("Going to connect the PageFlow with ApplicationType");
-		ConfigEngineAPI.connectAppTypeWithPF(serviceCode[0], json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'], json[0]['R1_PER_GROUP'], json[0]['R1_PER_TYPE'], json[0]['R1_PER_SUB_TYPE'], json[0]['R1_PER_CATEGORY']);
-	}
+//	if(override == true && connectWithPF == true && result['success'] == true && result['exists'] == false){
+//		logDebug("Going to connect the PageFlow with ApplicationType");
+//		ConfigEngineAPI.connectAppTypeWithPF(serviceCode[0], json[0]['R1_SMARTCHOICE_CODE_FOR_ACA'], json[0]['R1_PER_GROUP'], json[0]['R1_PER_TYPE'], json[0]['R1_PER_SUB_TYPE'], json[0]['R1_PER_CATEGORY']);
+//	}
 	
 	return res;
 }
@@ -1365,6 +1365,30 @@ function cmd_searchSharedDropDownList(){
 	
 	return res;
 }
+
+function cmd_searchSharedDropDownValues(){
+	logDebug("cmd_searchSharedDropDownValues.......................................");
+	var params = param("params");
+	logDebug("params: " + params);
+
+	var sql = param("sql");
+	logDebug("sql: " + sql);
+	
+	
+	var serviceCode = toJson(params);
+	logDebug("serviceCode: " + serviceCode[1]);
+	
+	var result = ConfigEngineAPI.searchSharedDropDownValues(serviceCode[1], false);
+	logDebug(JSON.stringify(stringifyJSType(result)));
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	return res;
+}
+
 
 function cmd_searchFeesUnitValues(){
 	logDebug("cmd_searchFeesUnitValues.......................................");
@@ -2203,6 +2227,28 @@ function cmd_loadUserConfigurations(){
 	return res;
 }
 
+function cmd_searchPageFlowList(){
+	logDebug("cmd_searchPageFlowList.......................................");
+	var params = param("params");
+	logDebug("params: " + params);
+
+	var sql = param("sql");
+	logDebug("sql: " + sql);
+	
+	var serviceProvidorCode = toJson(params)[0];
+	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+	
+	var result = ConfigEngineAPI.searchPageFlowList(serviceProvidorCode);
+	logDebug(JSON.stringify(stringifyJSType(result)));
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	return res;
+}
+
 function cmd_searchPageFlowModel(){
 	logDebug("cmd_searchPageFlowModel.......................................");
 	var params = param("params");
@@ -2288,6 +2334,28 @@ logDebug("cmd_createPageFlowModel.......................................");
 	
 	
 	//
+	
+	return res;
+}
+
+function cmd_searchWorkflowList(){
+	logDebug("cmd_searchWorkflowList.......................................");
+	var params = param("params");
+	logDebug("params: " + params);
+
+	var sql = param("sql");
+	logDebug("sql: " + sql);
+	
+	var serviceProvidorCode = toJson(params)[0];
+	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+	
+	var result = ConfigEngineAPI.searchWorkflowList(serviceProvidorCode);
+	logDebug(JSON.stringify(stringifyJSType(result)));
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
 	
 	return res;
 }
@@ -2417,12 +2485,5 @@ function cmd_searchDepartmentListFlow() {
 	
 	return res;
 }
-
-
-//aa.env.setValue("action", "createPageFlowModel");
-//aa.env.setValue("override", "true");
-//aa.env.setValue("params", "[\"ADMA\", \"HASH_PF2\"]");
-//aa.env.setValue("json", '[{"R1_DOC_CODE_FOR_ACA":null,"R1_PER_CATEGORY":"HASH","R1_PER_GROUP":"Building","R1_PER_SUB_TYPE":"Certificates","R1_PER_TYPE":"Workbook","R1_SMARTCHOICE_CODE_FOR_ACA":"HASH_PF2","RENEWAL_CATEGORY":null,"RENEWAL_GROUP":null,"RENEWAL_SUB_TYPE":null,"RENEWAL_TYPE":null,"SERV_PROV_CODE":"ADMA","pageFlowModel":{"PAGE_FLOW_TYPE":"PERMIT","PF_GROUP_CODE":"HASH_PF2","SERV_PROV_CODE":"ADMA","stepModels":[{"DISPLAY_ORDER":"0","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"STEP_NAME":"Applicant Page","pageModels":[{"AFTERCLICK_SCRIPT_NAME":null,"BEFORECLICK_SCRIPT_NAME":null,"DISPLAY_ORDER":"0","INSTRUCTION":null,"ONLOAD_SCRIPT_NAME":null,"PAGE_ID":null,"PAGE_NAME":"Applicant Page Step","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"pageComponentModels":[{"COMPONENT_ID":"5","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"Applicant","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"Applicant","DISPLAY_FLG":null,"DISPLAY_ORDER":"0","EDITABLE_FLG":"Y","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":null,"PORTLET_RANGE2":null,"REQUIRED_FLG":"Y","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"},{"COMPONENT_ID":"1","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"Address","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"Address","DISPLAY_FLG":null,"DISPLAY_ORDER":"1","EDITABLE_FLG":"Y","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":null,"PORTLET_RANGE2":null,"REQUIRED_FLG":"Y","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"},{"COMPONENT_ID":"22","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"Assets","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"Assets","DISPLAY_FLG":null,"DISPLAY_ORDER":"2","EDITABLE_FLG":"N","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":null,"PORTLET_RANGE2":null,"REQUIRED_FLG":"Y","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"}],"pageI18NModels":[{"INSTRUCTION":null,"LANG_ID":"ar_AE","PAGE_NAME":"مقدم الطلب","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"INSTRUCTION":null,"LANG_ID":"en_US","PAGE_NAME":"Applicant Page Step","RES_ID":null,"SERV_PROV_CODE":"ADMA"}]}],"stepI18NModels":[{"LANG_ID":"ar_AE","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_NAME":"صفحة مقدم الطلب"},{"LANG_ID":"en_US","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_NAME":"Applicant Page"}]},{"DISPLAY_ORDER":"2","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"STEP_NAME":"Documents Page","pageModels":[{"AFTERCLICK_SCRIPT_NAME":null,"BEFORECLICK_SCRIPT_NAME":null,"DISPLAY_ORDER":"0","INSTRUCTION":null,"ONLOAD_SCRIPT_NAME":null,"PAGE_ID":null,"PAGE_NAME":"Attachements","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"pageComponentModels":[{"COMPONENT_ID":"13","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"Attachment","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"Attachment","DISPLAY_FLG":null,"DISPLAY_ORDER":"0","EDITABLE_FLG":"N","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":null,"PORTLET_RANGE2":null,"REQUIRED_FLG":"N","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"}],"pageI18NModels":[{"INSTRUCTION":null,"LANG_ID":"ar_AE","PAGE_NAME":"المرفقات","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"INSTRUCTION":null,"LANG_ID":"en_US","PAGE_NAME":"Attachements","RES_ID":null,"SERV_PROV_CODE":"ADMA"}]}],"stepI18NModels":[{"LANG_ID":"ar_AE","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_NAME":"الوثائق"},{"LANG_ID":"en_US","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_NAME":"Documents Page"}]},{"DISPLAY_ORDER":"1","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"STEP_NAME":"General Information Page","pageModels":[{"AFTERCLICK_SCRIPT_NAME":null,"BEFORECLICK_SCRIPT_NAME":null,"DISPLAY_ORDER":"0","INSTRUCTION":null,"ONLOAD_SCRIPT_NAME":null,"PAGE_ID":null,"PAGE_NAME":"Information 1","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"pageComponentModels":[{"COMPONENT_ID":"10","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"ASI","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"ASI","DISPLAY_FLG":null,"DISPLAY_ORDER":"0","EDITABLE_FLG":"N","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":"HASH_ASI","PORTLET_RANGE2":"APPLICATION INFORMATION","REQUIRED_FLG":"N","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"},{"COMPONENT_ID":"10","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"ASI","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"ASI","DISPLAY_FLG":null,"DISPLAY_ORDER":"1","EDITABLE_FLG":"N","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":"ACUD01","PORTLET_RANGE2":"BUILDING INFO","REQUIRED_FLG":"N","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"}],"pageI18NModels":[{"INSTRUCTION":null,"LANG_ID":"ar_AE","PAGE_NAME":"معلومات 1","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"INSTRUCTION":null,"LANG_ID":"en_US","PAGE_NAME":"Information 1","RES_ID":null,"SERV_PROV_CODE":"ADMA"}]},{"AFTERCLICK_SCRIPT_NAME":null,"BEFORECLICK_SCRIPT_NAME":null,"DISPLAY_ORDER":"1","INSTRUCTION":null,"ONLOAD_SCRIPT_NAME":null,"PAGE_ID":null,"PAGE_NAME":"Information 2","PF_GROUP_CODE":"HASH_PF2","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_ID":null,"pageComponentModels":[{"COMPONENT_ID":"11","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"ASI Table","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"ASI Table","DISPLAY_FLG":null,"DISPLAY_ORDER":"0","EDITABLE_FLG":"N","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":"HASH_ASIT","PORTLET_RANGE2":"HASH_ASIT","REQUIRED_FLG":"N","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"},{"COMPONENT_ID":"11","COMPONENT_INSTRUCTION":null,"COMPONENT_NAME":"ASI Table","COMPONENT_SEQ_NBR":null,"CUSTOM_HEADING":"ASI Table","DISPLAY_FLG":null,"DISPLAY_ORDER":"1","EDITABLE_FLG":"N","PAGE_ID":null,"PF_GROUP_CODE":"HASH_PF2","PORTLET_RANGE1":"ABD","PORTLET_RANGE2":"ABD","REQUIRED_FLG":"N","RES_ID":null,"SERV_PROV_CODE":"ADMA","VALIDATE_FLG":"N"}],"pageI18NModels":[{"INSTRUCTION":null,"LANG_ID":"ar_AE","PAGE_NAME":"معلومات 2","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"INSTRUCTION":null,"LANG_ID":"en_US","PAGE_NAME":"Information 2","RES_ID":null,"SERV_PROV_CODE":"ADMA"}]}],"stepI18NModels":[{"LANG_ID":"ar_AE","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_NAME":"معلومات عامة"},{"LANG_ID":"en_US","RES_ID":null,"SERV_PROV_CODE":"ADMA","STEP_NAME":"General Information Page"}]}]}}]');
-
 
 run();

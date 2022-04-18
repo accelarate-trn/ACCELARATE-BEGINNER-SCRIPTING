@@ -79,13 +79,16 @@ function cmd_getAllTimeAccountTypes() {
 }
 
 function cmd_updateTimeAccountTypes() {
+	logDebug("cmd_updateTimeAccountTypes.......................................");
 	var params = param("params");
 	var json = param("json");
+	printJson("json", json);
 	var override = param("override");
 	var Delete = param("delete");
 
 	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
 	Delete = Delete == 'true' || Delete == 'TRUE' || Delete == 'True' ? true : false;
+//	Delete = true;
 
 	json = toJson(json);
 	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
@@ -372,6 +375,20 @@ function cmd_searchLicensedProfessionals() {
 	return res;
 }
 
+function cmd_searchLicensedProfessionalTypesList(){
+	logDebug('cmd_searchLicensedProfessionalTypesList....................................');
+
+	var result = ConfigEngineAPI.searchLicensedProfessionalTypesList();
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+
+	return res;
+}
+
 function cmd_searchLicensedProfessionalsList() {
 	logDebug('cmd_searchLicensedProfessionalsList....................................');
 	var params = param("params");
@@ -379,14 +396,129 @@ function cmd_searchLicensedProfessionalsList() {
 	
 	var serviceProvidorCode = toJson(params)[0];
 	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+	
+	var inverse = false;
+	try{
+		inverse = toJson(params)[1];
+	}catch(e){
+		
+	}
+	if(inverse == true || inverse == "True" || inverse == 'TRUE' || inverse == 'true'){
+		inverse = true;
+	}
+	logDebug("inverse: " + inverse);
 
-	var result = ConfigEngineAPI.searchLicensedProfessionalsList(serviceProvidorCode);
+	var result = ConfigEngineAPI.searchLicensedProfessionalsList(serviceProvidorCode, false, false, inverse);
 	var res = {
 		"message": "Success",
 		"content": result
 	};
 	
 	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+
+	return res;
+}
+
+function cmd_searchLicensedProfessionalAttributes() {
+	logDebug('cmd_searchLicensedProfessionalAttributes....................................');
+	var params = param("params");
+	var sql = param("sql");
+	
+	var serviceProvidorCode = toJson(params)[0];
+	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+
+	var result = ConfigEngineAPI.searchLicensedProfessionalAttributes(serviceProvidorCode);
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+
+	return res;
+}
+
+function cmd_updateLicensedProfessionalAttributes() {
+	logDebug('cmd_updateLicensedProfessionalAttributes....................................');
+	var params = param("params");
+	var json = param("json");
+	var override = param("override");
+
+	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
+
+	var serviceProvidorCode = toJson(params)[0];
+	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+	
+	printJson("json", json);
+	
+	json = toJson(json);
+	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+
+	var result = ConfigEngineAPI.updateLicensedProfessionalAttributes(json, serviceProvidorCode, override);
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Licensed Professional Attributes", String(params[0]), jsonInputCloned, result, override);
+	}
+
+	return res;
+}
+
+function cmd_searchLicensedProfessionalTablesData() {
+	logDebug('cmd_searchLicensedProfessionalTablesData....................................');
+	var params = param("params");
+	var sql = param("sql");
+	
+	var serviceProvidorCode = toJson(params)[0];
+	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+
+	var result = ConfigEngineAPI.searchLicensedProfessionalTablesData(serviceProvidorCode);
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+
+	return res;
+}
+
+function cmd_updateLicensedProfessionalTablesData() {
+	logDebug('cmd_updateLicensedProfessionalTablesData....................................');
+	var params = param("params");
+	var json = param("json");
+	var override = param("override");
+
+	override = override == 'true' || override == 'TRUE' || override == 'True' ? true : false;
+
+	var serviceProvidorCode = toJson(params)[0];
+	logDebug("serviceProvidorCode: " + serviceProvidorCode);
+	
+	printJson("json", json);
+	
+	json = toJson(json);
+	
+	var jsonInputCloned = JSON.parse(JSON.stringify(json));//Clone Object
+
+	var result = ConfigEngineAPI.updateLicensedProfessionalTablesData(json, serviceProvidorCode, override);
+
+	var res = {
+		"message": "Success",
+		"content": result
+	};
+	
+	logDebug("Result:: " + JSON.stringify(stringifyJSType(res)));
+	
+	if(result["success"] == true){
+		archive_GITHUB("Licensed Professional Tables Data", String(params[0]), jsonInputCloned, result, override);
+	}
 
 	return res;
 }
@@ -992,7 +1124,15 @@ function cmd_searchSharedDropDowns(){
 	logDebug("serviceCode: " + params[0]);
 	logDebug("keys: " + keys);
 	
-	var result = ConfigEngineAPI.searchSharedDropDowns(params[0], keys, false);
+	var type = null;
+	if(params.length == 3){
+		type = params[2];
+	}
+	if(type == undefined || type == ""){
+		type = null;
+	}
+	
+	var result = ConfigEngineAPI.searchSharedDropDowns(params[0], keys, false, type);
 	logDebug(JSON.stringify(stringifyJSType(result)));
 
 	var res = {
@@ -1005,6 +1145,7 @@ function cmd_searchSharedDropDowns(){
 
 function cmd_createSharedDropDowns(){
 	logDebug("cmd_createSharedDropDowns.......................................");
+	timeDebug("createSharedDropDowns:START");
 		try{
 	var params = param("params");
 	logDebug("params: " + params);
@@ -1062,7 +1203,7 @@ function cmd_createSharedDropDowns(){
 					}
 				}
 		
-				logDebug("oldMapping:: " + JSON.stringify(stringifyJSType(oldMapping)));
+//				logDebug("oldMapping:: " + JSON.stringify(stringifyJSType(oldMapping)));
 				
 				if(override && oldMapping.length > 0){
 					//Delete Old Mapping
@@ -1075,19 +1216,19 @@ function cmd_createSharedDropDowns(){
 				resArr = resArr.concat(ConfigEngineAPI.createSharedDropDown(json, override));
 				
 				var createdObject = ConfigEngineAPI.searchSharedDropDown(json["BIZDOMAIN"], false);
-				logDebug("createdObject:: " + JSON.stringify(stringifyJSType(createdObject)));
+//				logDebug("createdObject:: " + JSON.stringify(stringifyJSType(createdObject)));
 		
 				var newMapping = [];
 				for(om in oldMapping){
 					var oldMappedParent = oldMapping[om]["parentValueStandardChoiceModel"];
 					var oldMappedChild = oldMapping[om]["childValueStandardChoiceModel"];
-					logDebug('............  1');
+
 					for(sc in createdObject[0]["sharedDropDownValueModels"]){
 						var isfound = false;
 						var createdObj =createdObject[0]["sharedDropDownValueModels"][sc];
-						logDebug('............  2');	
-						logDebug('oldMappedParent: ' + JSON.stringify(stringifyJSType(oldMappedParent)));
-						logDebug('createdObj: ' + JSON.stringify(stringifyJSType(createdObj)));
+
+//						logDebug('oldMappedParent: ' + JSON.stringify(stringifyJSType(oldMappedParent)));
+//						logDebug('createdObj: ' + JSON.stringify(stringifyJSType(createdObj)));
 						if(oldMappedParent != null && oldMappedParent != undefined && oldMappedParent["BIZDOMAIN"] == createdObj["BIZDOMAIN"] &&
 								oldMappedParent["BIZDOMAIN_VALUE"] == createdObj["BIZDOMAIN_VALUE"]
 						){
@@ -1096,7 +1237,7 @@ function cmd_createSharedDropDowns(){
 							
 							isfound = true;
 						}
-						logDebug('............  3');
+
 						if(oldMappedChild != null && oldMappedChild != undefined && oldMappedChild["BIZDOMAIN"] == createdObj["BIZDOMAIN"] &&
 								oldMappedChild["BIZDOMAIN_VALUE"] == createdObj["BIZDOMAIN_VALUE"]
 						){
@@ -1105,7 +1246,7 @@ function cmd_createSharedDropDowns(){
 							
 							isfound = true;
 						}
-						logDebug('............  4');
+
 						if(isfound){
 							oldMapping[om]["MAPPING_ID"] = null;
 							
@@ -1116,8 +1257,7 @@ function cmd_createSharedDropDowns(){
 						}
 					}
 				}
-				logDebug('............  5');
-				logDebug("newMapping:: " + JSON.stringify(stringifyJSType(newMapping)));
+//				logDebug("newMapping:: " + JSON.stringify(stringifyJSType(newMapping)));
 				
 				if(newMapping != null && newMapping.length > 0){
 					try{
@@ -1152,6 +1292,8 @@ function cmd_createSharedDropDowns(){
 			archive_GITHUB("Standard Choices", String(params[0]), jsonInputCloned, result, override);
 		}
 	}
+	
+	timeDebug("createSharedDropDowns:END");
 	
 	return res;
 		}catch(e){

@@ -11,6 +11,7 @@
 function HTTPAPI() {
 }
 
+
 HTTPAPI.post = function(url, body, headers, responseType) {
 	return HTTPAPI.send("POST", url, body, headers, responseType);
 }
@@ -249,6 +250,27 @@ function isEmpty(val) {
 }
 
 var github;// = new GitHub();
+
+//var entity = aa.env.getValue("entity");
+//var primaryKey = aa.env.getValue("primaryKey");
+//var json = aa.env.getValue("json");
+//var result = aa.env.getValue("result");
+//var overrideExisting = aa.env.getValue("overrideExisting");
+//
+//javaLog('GITHUB:entity: ' + entity);
+//javaLog('GITHUB:primaryKey: ' + primaryKey);
+//javaLog('GITHUB:json: ' + json);
+//javaLog('GITHUB:result: ' + result);
+//javaLog('GITHUB:overrideExisting: ' + overrideExisting);
+//
+//if(!isEmpty(entity) && !isEmpty(primaryKey) && !isEmpty(json) && !isEmpty(result) && !isEmpty(overrideExisting)){
+//	json = JSON.parse(json);
+//	result = JSON.parse(result);
+//	overrideExisting = overrideExisting == "true" || overrideExisting == "TRUE" || overrideExisting == "True" ? true : false;
+//	
+//	archive_GITHUB(entity, primaryKey, json, result, overrideExisting);
+//}
+
 function archive_GITHUB(entity, primaryKey, json, result, overrideExisting){
 	javaLog("archive_GITHUB..........................");
 	javaLog("overrideExisting: " + overrideExisting);
@@ -359,74 +381,3 @@ function javaLog(msg){
 	java.lang.System.out.println("GITHUB>> " + msg);
 	aa.print("GITHUB>> " + msg);
 }
-
-//try {
-//	var username = getLookupVal('WORKBOOK_CONFIGURATIONS', 'GIT_REPOSITORY_USERNAME');
-//	var password = getLookupVal('WORKBOOK_CONFIGURATIONS', 'GIT_REPOSITORY_PASSWORD');
-//	var repo = getLookupVal('WORKBOOK_CONFIGURATIONS', 'GIT_REPOSITORY_URL');
-//	
-//	var github = new GitHub(username, password, repo);
-	
-//	var fileName = encodeURIComponent("Custom Tables/HASH_ASIT3.json");
-//	var fileName = encodeURIComponent("Custom Fields/HASH_ASI.json");
-//	var fileName = "64da5348d4fc6529a978a36f37ef8aa77bec2233";
-//	var fileName = "875c6990274abdd8d9be49e0028f9eee49b8bb4b";
-//	var fileName = encodeURIComponent("Custom Fields/HASH_ASI") + ".json?ref=875c6990274abdd8d9be49e0028f9eee49b8bb4b";
-	
-//	var entityTracker = github.readFile(fileName);
-////	var entityTracker = github.readFileComments(fileName);
-////	var entityTracker = github.readFileBySHA(fileName);
-//	
-//	aa.print('entityTracker: ' + JSON.stringify(entityTracker));
-//
-//	var customFormLastUpdated = null;
-//	if (entityTracker["response"]["message"] != "Not Found") {
-//		var content = entityTracker["response"]["content"];
-//		content = base64Decode(content);
-//		aa.print("content: " + content);
-////		aa.print("content: " + JSON.stringify(content));
-////		content = JSON.parse(content);
-////		aa.print("content: " + JSON.stringify(content));
-//	}
-	
-//	for(var j in entityTracker){
-//		aa.print("");
-//		aa.print("..............................");
-//		aa.print("sha: " + entityTracker[j]["sha"]);
-//		aa.print("date: " + entityTracker[j]["date"]);
-//		aa.print("message: " + entityTracker[j]["message"]);
-//		aa.print("..............................");
-//		aa.print("");
-//	}
-	
-	
-	////////////////////////////////////
-	
-//	var json = {"Test 1": "val 1", "Test 2": "val 2", "Test 3": "val 3", "Test 4": "val 4"};
-//	var updateResult = github.updateFile("customfields/test1.json", "Auto Configuration Update", aa.getAuditID(), "mhashaikeh@accela.com", JSON.stringify(json));
-////	aa.print("updateResult: " + updateResult);
-//	aa.print("updateResult: " + JSON.stringify(updateResult));
-	
-	
-//	var result = getFileBySHA_GITHUB("Custom Fields", "HASH_ASI", "875c6990274abdd8d9be49e0028f9eee49b8bb4b");
-//	var result = getFileComments_GITHUB("Drilldown", "HASH2");
-//	aa.print("result: " + result);
-//	aa.print("result: " + JSON.stringify(result));
-	
-//} catch (e) {
-//	aa.print("Error while calling GIT Repository: " + e);
-//}
-
-/////////////////////////////////////
-
-//var entity = 'customfields';
-//var primaryKey = 'HASH_ASI2';
-//var json = [{"FIELD_ALIAS_ENGLISH":"City Label EN","FIELD_ALIAS_SECLANG":"City Label AR","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"a","R1_ATTRIBUTE_VALUE":"A","R1_ATTRIBUTE_VALUE_REQ_FLAG":"N","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"City1","R1_CHECKBOX_DESC_ALT":"City","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"5","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"20","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"10","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"H","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"عمان","R1_CHECKBOX_DESC":"City1","R1_CHECKBOX_DESC_ALT":"City1","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"A","R1_CHECKBOX_DESC":"City1","R1_CHECKBOX_DESC_ALT":"City1","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":{"BIZDOMAIN":"City","BIZDOMAIN_DDLIST_SEQ":null,"LEVEL1":"HASH_ASI2","LEVEL2":"APPLICATION INFORMATION","LEVEL3":"APPLICATION","LEVEL4":"City1","SDDL_RELATION_TYPE":"APPLICATION_SPECIFIC_INFO","SERV_PROV_CODE":"ADMA"}},{"FIELD_ALIAS_ENGLISH":"Country Label En","FIELD_ALIAS_SECLANG":"Country Label Ar","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"m","R1_ATTRIBUTE_VALUE":"JOR","R1_ATTRIBUTE_VALUE_REQ_FLAG":"N","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"Country","R1_CHECKBOX_DESC_ALT":"Country","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"5","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"10","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"10","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"H","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"الأردن","R1_CHECKBOX_DESC":"Country","R1_CHECKBOX_DESC_ALT":"Country","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"JOR","R1_CHECKBOX_DESC":"Country","R1_CHECKBOX_DESC_ALT":"Country","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":{"BIZDOMAIN":"Country","BIZDOMAIN_DDLIST_SEQ":null,"LEVEL1":"HASH_ASI2","LEVEL2":"APPLICATION INFORMATION","LEVEL3":"APPLICATION","LEVEL4":"Country","SDDL_RELATION_TYPE":"APPLICATION_SPECIFIC_INFO","SERV_PROV_CODE":"ADMA"}},{"FIELD_ALIAS_ENGLISH":"County Label En","FIELD_ALIAS_SECLANG":"County Label AR","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"b","R1_ATTRIBUTE_VALUE":"P","R1_ATTRIBUTE_VALUE_REQ_FLAG":"N","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"County","R1_CHECKBOX_DESC_ALT":"County","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"5","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"30","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"10","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"Y","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"الضاحية","R1_CHECKBOX_DESC":"County","R1_CHECKBOX_DESC_ALT":"County","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"P","R1_CHECKBOX_DESC":"County","R1_CHECKBOX_DESC_ALT":"County","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":{"BIZDOMAIN":"County","BIZDOMAIN_DDLIST_SEQ":null,"LEVEL1":"HASH_ASI2","LEVEL2":"APPLICATION INFORMATION","LEVEL3":"APPLICATION","LEVEL4":"County","SDDL_RELATION_TYPE":"APPLICATION_SPECIFIC_INFO","SERV_PROV_CODE":"ADMA"}},{"FIELD_ALIAS_ENGLISH":"Street Label ENN","FIELD_ALIAS_SECLANG":"شارع","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"c","R1_ATTRIBUTE_VALUE":"B","R1_ATTRIBUTE_VALUE_REQ_FLAG":"N","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"Street","R1_CHECKBOX_DESC_ALT":"Street","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"5","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"50","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"10","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"Y","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"شارع 12","R1_CHECKBOX_DESC":"Street","R1_CHECKBOX_DESC_ALT":"Street","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"B","R1_CHECKBOX_DESC":"Street","R1_CHECKBOX_DESC_ALT":"Street","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":{"BIZDOMAIN":"Street","BIZDOMAIN_DDLIST_SEQ":null,"LEVEL1":"HASH_ASI2","LEVEL2":"APPLICATION INFORMATION","LEVEL3":"APPLICATION","LEVEL4":"Street","SDDL_RELATION_TYPE":"APPLICATION_SPECIFIC_INFO","SERV_PROV_CODE":"ADMA"}},{"FIELD_ALIAS_ENGLISH":"test En 1","FIELD_ALIAS_SECLANG":"Test AR 1","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"d","R1_ATTRIBUTE_VALUE":"T","R1_ATTRIBUTE_VALUE_REQ_FLAG":"Y","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"Test","R1_CHECKBOX_DESC_ALT":"Test","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"1","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"60","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"10","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"Y","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"ت ج","R1_CHECKBOX_DESC":"Test","R1_CHECKBOX_DESC_ALT":"Test","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"T","R1_CHECKBOX_DESC":"Test","R1_CHECKBOX_DESC_ALT":"Test","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":null},{"FIELD_ALIAS_ENGLISH":"test En 2","FIELD_ALIAS_SECLANG":"Test AR 2","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"e","R1_ATTRIBUTE_VALUE":"C","R1_ATTRIBUTE_VALUE_REQ_FLAG":"Y","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"Test 2","R1_CHECKBOX_DESC_ALT":"Test 2","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"1","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 2","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"10","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"20","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"Y","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"إفتراضي 2","R1_CHECKBOX_DESC":"Test 2","R1_CHECKBOX_DESC_ALT":"Test 2","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 2","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"C","R1_CHECKBOX_DESC":"Test 2","R1_CHECKBOX_DESC_ALT":"Test 2","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 2","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":null},{"FIELD_ALIAS_ENGLISH":"ListTest","FIELD_ALIAS_SECLANG":"مجموعة الشوارع ar","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"g","R1_ATTRIBUTE_VALUE":"","R1_ATTRIBUTE_VALUE_REQ_FLAG":"N","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"ListTest","R1_CHECKBOX_DESC_ALT":"label","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"5","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 3","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"20","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"30","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"Y","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"مجموعة الشواع","R1_CHECKBOX_DESC":"ListTest","R1_CHECKBOX_DESC_ALT":"ListTest","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 3","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"","R1_CHECKBOX_DESC":"ListTest","R1_CHECKBOX_DESC_ALT":"ListTest","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 3","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":{"BIZDOMAIN":"Street","BIZDOMAIN_DDLIST_SEQ":null,"LEVEL1":"HASH_ASI2","LEVEL2":"APPLICATION INFORMATION 3","LEVEL3":"APPLICATION","LEVEL4":"ListTest","SDDL_RELATION_TYPE":"APPLICATION_SPECIFIC_INFO","SERV_PROV_CODE":"ADMA"}},{"FIELD_ALIAS_ENGLISH":"test En 3","FIELD_ALIAS_SECLANG":"Test AR 3","DEFAULT_APO_GIS_LAYER":null,"DISPLAY_LENGTH":"50","LOCATION_QUERY_FLAG":null,"MAX_LENGTH":"100","R1_ALIGNMENT":null,"R1_ATTRIBUTE_UNIT_TYPE":"f","R1_ATTRIBUTE_VALUE":"D","R1_ATTRIBUTE_VALUE_REQ_FLAG":"N","R1_CHECKBOX_CODE":"HASH_ASI2","R1_CHECKBOX_DESC":"Test 3","R1_CHECKBOX_DESC_ALT":"Test 3","R1_CHECKBOX_GROUP":"APPLICATION","R1_CHECKBOX_IND":"6","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 3","R1_DEFAULT_SELECTED":null,"R1_DISABLE_SORT_TABLE":null,"R1_DISPLAY_LIC_VERIF_ACA":null,"R1_DISPLAY_ORDER":"10","R1_FEE_INDICATOR":"1","R1_GROUP_DISPLAY_ORDER":"30","R1_REQ_FEE_CALC":"N","R1_SEARCHABLE_FLAG":"N","R1_SEARCHABLE_FOR_ACA":"N","R1_SHARED_DDLIST_ID":null,"R1_SUPERVISOR_EDIT_ONLY_FLAG":"N","R1_TABLE_GROUP_NAME":"HASH_ASI2","R1_TASK_STATUS_REQ_FLAG":null,"R1_VALIDATION_SCRIPT_NAME":null,"RES_ID":null,"SERV_PROV_CODE":"ADMA","VCH_DISP_FLAG":"Y","refAppSpecInfoFieldI18NModels":[{"LANG_ID":"ar_AE","R1_ATTRIBUTE_VALUE":"إفتراضي 3","R1_CHECKBOX_DESC":"Test 3","R1_CHECKBOX_DESC_ALT":"Test 3","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 3","RES_ID":null,"SERV_PROV_CODE":"ADMA"},{"LANG_ID":"en_US","R1_ATTRIBUTE_VALUE":"D","R1_CHECKBOX_DESC":"Test 3","R1_CHECKBOX_DESC_ALT":"Test 3","R1_CHECKBOX_TYPE":"APPLICATION INFORMATION 3","RES_ID":null,"SERV_PROV_CODE":"ADMA"}],"sharedDropDownModel":null}];
-//var result = {"success": true};
-//var overrideExisting = true;
-//archive_GITHUB(entity, primaryKey, json, result, overrideExisting);
-
-
-
-
-

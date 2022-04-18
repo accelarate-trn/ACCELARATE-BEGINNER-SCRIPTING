@@ -201,7 +201,7 @@ ConfigEngine.isObjI18n = function (obj) {
 ConfigEngine.prototype.isDefaultI18nCreated = function (obj) {
 	var i18nModelClass = com.accela.orm.util.GenericI18NModeUtil.getI18NModelClassName(obj);
 	var i18NModel = com.accela.orm.util.GenericI18NModeUtil.copyModelToI18NModel(obj, i18nModelClass);
-
+	
 	if (i18NModel instanceof com.accela.orm.model.AuditModelEnable) {
 		var i18NAuditModel = i18NModel.getAuditModel();
 		i18NAuditModel.setAuditDate(null);
@@ -209,7 +209,6 @@ ConfigEngine.prototype.isDefaultI18nCreated = function (obj) {
 	} else {
 		i18NModel.setRecDate(null);
 	}
-
 	var resArr = this.genDao.search(i18NModel, 0, 0);
 	return resArr && resArr.size() > 0;
 }
@@ -384,7 +383,9 @@ ConfigEngine.prototype.search = function (jsonObj, asJson, allSubModels, include
 			auditMod.setAuditStatus('A');
 			entityObj.setAuditModel(auditMod);
 		} else {
-			entityObj.setRecStatus('A');
+			if(this.className != 'com.accela.orm.model.common.UserSecurityModel'){
+				entityObj.setRecStatus('A');
+			}
 		}
 	}
 
@@ -422,7 +423,16 @@ ConfigEngine.prototype.Delete = function (pkJsonObj, subModelsMap) {
 	}
 }
 
-ConfigEngine.prototype.create = function (pkJsonObj, jsonObj, subModelsMap, overrideExisting, skipDelete, active, isGenerator, doCascade) {
+ConfigEngine.prototype.DeleteEntities = function (searchRes, className) {
+	for (var w = 0; w < searchRes.length; w++) {
+		logDebug('deleting: searchRes[w]: ' + searchRes[w]);
+		var entityObj = ConfigEngine.jsonToEntityClassCascade(searchRes[w], className);
+
+		this.deleteEntityCascade(entityObj);
+	}
+}
+
+ConfigEngine.prototype.create = function (pkJsonObj, jsonObj, subModelsMap, overrideExisting, skipDelete, active, isGenerator, doCascade, insertOnly) {
 	if(isGenerator == null || isGenerator == undefined){
 		isGenerator = true;
 	}
@@ -438,34 +448,47 @@ ConfigEngine.prototype.create = function (pkJsonObj, jsonObj, subModelsMap, over
 	var conf = this;
 
 	// Search by PK for existing items
-	var searchRes = this.search(pkJsonObj, false, false, false, doCascade, false);
-	logDebug('CREATE::searchRes.length: ' + searchRes.length);
-	
-	logDebug("pkJsonObj JSON:: " + JSON.stringify(stringifyJSType(pkJsonObj)));
-	logDebug("jsonObj JSON:: " + JSON.stringify(stringifyJSType(jsonObj)));
-	logDebug("subModelsMap JSON:: " + JSON.stringify(stringifyJSType(subModelsMap)));
-	logDebug("overrideExisting: " + overrideExisting);
-	logDebug("skipDelete: " + skipDelete);
-	logDebug("active: " + active);
-	
-	// If there's existing items we delete them or return an erorr based on
-	// overrideExisting flag
-	if (searchRes.length > 0) {
-		if (!overrideExisting) {
-			return {
-				"success": false,
-				"exists": true
-			}
-		} else {
-			// delete
-			if(!skipDelete){
-				for (var w = 0; w < searchRes.length; w++) {
-					logDebug('Deleteing searchRes[w]: ' + searchRes[w]);
-					var entityObj = searchRes[w];
-					this.deleteEntityCascade(entityObj, subModelsMap);
+	var searchRes = [];
+	if(pkJsonObj != null && pkJsonObj != undefined && pkJsonObj != "BATCH"){
+		searchRes = this.search(pkJsonObj, false, false, false, doCascade, false);
+		logDebug('CREATE::searchRes.length: ' + searchRes.length);
+		logDebug('overrideExisting: ' + overrideExisting);
+		logDebug('skipDelete: ' + skipDelete);
+		
+		
+//		logDebug("pkJsonObj JSON:: " + JSON.stringify(stringifyJSType(pkJsonObj)));
+//		logDebug("jsonObj JSON:: " + JSON.stringify(stringifyJSType(jsonObj)));
+//		logDebug("subModelsMap JSON:: " + JSON.stringify(stringifyJSType(subModelsMap)));
+//		logDebug("overrideExisting: " + overrideExisting);
+//		logDebug("skipDelete: " + skipDelete);
+//		logDebug("active: " + active);
+		
+		// If there's existing items we delete them or return an erorr based on
+		// overrideExisting flag
+		if (searchRes.length > 0) {
+			logDebug('Search > 0');
+			logDebug('overrideExisting: ' + overrideExisting);
+			if (!overrideExisting) {
+				return {
+					"success": false,
+					"exists": true
+				}
+			} else {
+				// delete
+				if(!skipDelete){
+					for (var w = 0; w < searchRes.length; w++) {
+						logDebug('Deleteing searchRes[w]: ' + searchRes[w]);
+						var entityObj = searchRes[w];
+						this.deleteEntityCascade(entityObj, subModelsMap);
+					}
 				}
 			}
 		}
+	}
+	
+	var isBatch = false;
+	if(pkJsonObj != null && pkJsonObj != undefined && pkJsonObj == "BATCH"){
+		isBatch = true;
 	}
 
 	var jsonObjArr = jsonObj;
@@ -473,22 +496,39 @@ ConfigEngine.prototype.create = function (pkJsonObj, jsonObj, subModelsMap, over
 		jsonObjArr = [jsonObj];
 	}
 
+	logDebug('isBatch: ' + isBatch);
+	
 	// Go over the entites and create them
-	for (var w = 0; w < jsonObjArr.length; w++) {
-		var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap, active);
-		logDebug("searchRes.length: " + searchRes.length);
-		logDebug("skipDelete: " + skipDelete);
-
-		if(searchRes.length > 0){
-			if(skipDelete){
-				this.createEntityCascade(entityObj, subModelsMap, true, isGenerator);
+	if(isBatch == true){
+		var entityObjArr = [];
+		for (var w = 0; w < jsonObjArr.length; w++) {
+			var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap, active);
+//			logDebug("searchRes.length: " + searchRes.length);
+//			logDebug("skipDelete: " + skipDelete);
+			
+			entityObjArr.push(entityObj);
+		}
+		
+		this.createEntityCascadeBatch(entityObjArr, subModelsMap, false, isGenerator);
+		
+	}else{
+		
+		for (var w = 0; w < jsonObjArr.length; w++) {
+			var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap, active);
+			logDebug("searchRes.length: " + searchRes.length);
+			logDebug("skipDelete: " + skipDelete);
+	
+			if(searchRes.length > 0){
+				if(skipDelete && !insertOnly){
+					this.createEntityCascade(entityObj, subModelsMap, true, isGenerator);
+				}else{
+					this.createEntityCascade(entityObj, subModelsMap, false, isGenerator);
+				}
 			}else{
 				this.createEntityCascade(entityObj, subModelsMap, false, isGenerator);
 			}
-		}else{
-			this.createEntityCascade(entityObj, subModelsMap, false, isGenerator);
+	
 		}
-//		
 	}
 
 	return {
@@ -508,39 +548,59 @@ ConfigEngine.prototype.update = function (pkJsonObj, jsonObj, subModelsMap, over
 	
 	var conf = this;
 
-	// Search by PK for existing items
-	var searchRes = this.search(pkJsonObj, false, false, false, doCascade);
-	logDebug('UPDATE::searchRes.length: ' + searchRes.length);
+	if(pkJsonObj == null || pkJsonObj == undefined){
+		// Go over the entites and create them
+		var jsonObjArr = jsonObj;
+		if (!Array.isArray(jsonObj)) {
+			jsonObjArr = [jsonObj];
+		}
+		
+		for (var w = 0; w < jsonObjArr.length; w++) {
+			var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap);
+			this.createEntityCascade(entityObj, subModelsMap, true, isGenerator);
+		}
 
-	// If there's existing items we delete them or return an erorr based on
-	// overrideExisting flag
-	if (searchRes.length > 0) {
-		if (!overrideExisting) {
-			return {
-				"success": false,
-				"exists": true
+		return {
+			"success": true,
+			"exists": true
+		}
+		
+	}else{
+	
+		// Search by PK for existing items
+		var searchRes = this.search(pkJsonObj, false, false, false, doCascade);
+		logDebug('UPDATE::searchRes.length: ' + searchRes.length);
+	
+		// If there's existing items we delete them or return an erorr based on
+		// overrideExisting flag
+		if (searchRes.length > 0) {
+			if (!overrideExisting) {
+				return {
+					"success": false,
+					"exists": true
+				}
+			} else {
+				var jsonObjArr = jsonObj;
+				if (!Array.isArray(jsonObj)) {
+					jsonObjArr = [jsonObj];
+				}
+	
+				// Go over the entites and create them
+				for (var w = 0; w < jsonObjArr.length; w++) {
+					var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap);
+					this.createEntityCascade(entityObj, subModelsMap, true, isGenerator);
+				}
+	
+				return {
+					"success": true,
+					"exists": true
+				}
 			}
 		} else {
-			var jsonObjArr = jsonObj;
-			if (!Array.isArray(jsonObj)) {
-				jsonObjArr = [jsonObj];
-			}
-
-			// Go over the entites and create them
-			for (var w = 0; w < jsonObjArr.length; w++) {
-				var entityObj = ConfigEngine.jsonToEntityClassCascade(jsonObjArr[w], this.className, subModelsMap);
-				this.createEntityCascade(entityObj, subModelsMap, true, isGenerator);
-			}
-
 			return {
-				"success": true,
-				"exists": true
+				"success": false,
+				"exists": false
 			}
-		}
-	} else {
-		return {
-			"success": false,
-			"exists": false
 		}
 	}
 }
@@ -587,7 +647,7 @@ ConfigEngine.prototype.deleteEntityCascade = function (entityObj, subModelsMap) 
 var createCount = 0;
 var updateCount = 0;
 ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, updateObj, isGenerator) {
-	logDebug('createEntityCascade...................');
+//	logDebug('createEntityCascade...................');
 	if (!subModelsMap) {
 		subModelsMap = {};
 	}
@@ -602,11 +662,11 @@ ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, 
 	
 	
 	if (!updateObj) {
-		logDebug("entityObj to be create..........: " + JSON.stringify(stringifyJSType(entityObj)));
+//		logDebug("entityObj to be create..........: " + JSON.stringify(stringifyJSType(entityObj)));
 //		invokeGetters(entityObj);
 		try{
 			var resultModel = this.genDao.create(entityObj, isGenerator);
-			logDebug("resultModel:: " + JSON.stringify(stringifyJSType(resultModel)));
+//			logDebug("resultModel:: " + JSON.stringify(stringifyJSType(resultModel)));
 			createCount++;
 		}catch(e){
 			var error = "";
@@ -619,6 +679,9 @@ ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, 
 			logDebug('error: ' + error);
 			if (error.indexOf("Duplicated object") != -1 || error.indexOf("Cannot insert duplicate key") != -1 ) {
 				logDebug("Duplicated object Going to update instead on insert");
+				this.genDao.update(entityObj);
+				updateCount++;
+				logDebug("updateCount: " + updateCount);
 			} else {
 				logDebug('createEntityCascade : Error While call DAO.Create: ' + e);
 				logDebug('createEntityCascade : entityObj: ' + entityObj);
@@ -627,33 +690,34 @@ ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, 
 		}
 		
 	} else {
-		logDebug("entityObj to be update..........: " + JSON.stringify(stringifyJSType(entityObj)));
+//		logDebug("entityObj to be update..........: " + JSON.stringify(stringifyJSType(entityObj)));
 		this.genDao.update(entityObj);
 		updateCount++;
+//		logDebug('updateCount: ' + updateCount);
 	}
 
-	logDebug("subModels.length: " + subModels.length);
+//	logDebug("subModels.length: " + subModels.length);
 	
 	for (var i = 0; i < subModels.length; i++) {
 		if (subModelsMap.hasOwnProperty(subModels[i].getName())) {
 			var returnType = ConfigEngine.getReturnType(subModels[i].getGetterMethod());
-			logDebug("returnType: " + returnType);
+//			logDebug("returnType: " + returnType);
 
 			var childSubModelsMap = subModelsMap[subModels[i].getName()];
 
 			var isGenerator = childSubModelsMap.hasOwnProperty("ISGENERATOR") ? childSubModelsMap["ISGENERATOR"] : true;
-			logDebug("isGenerator: " + isGenerator);
+//			logDebug("isGenerator: " + isGenerator);
 
 			var subModelValueCloned = subModels[i].getGetterMethod().invoke(entityObjBeforeUpdate, []);
-			logDebug("subModelValueCloned: " + subModelValueCloned);
+//			logDebug("subModelValueCloned: " + subModelValueCloned);
 			
 			var subModelValue = subModels[i].getGetterMethod().invoke(entityObj, []);
-			logDebug("subModelValue: " + subModelValue);
+//			logDebug("subModelValue: " + subModelValue);
 
 			
 			// If there's no value for the sub model, nothing to create
 			if (subModelValue == null) {
-				logDebug("subModelValue == null");
+//				logDebug("subModelValue == null");
 				continue;
 			}
 
@@ -669,33 +733,35 @@ ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, 
 			}
 
 			if (returnType["ISARRAY"]) {
-				logDebug('returnType IS ARRAY');
+//				logDebug('returnType IS ARRAY');
 				var subModelJsonArr = [];
 
 				subModelValue = subModelValue.toArray();
 				subModelValueCloned = subModelValueCloned.toArray();
 
-				logDebug("subModelValue.length: " + subModelValue.length);
+//				logDebug("subModelValue.length: " + subModelValue.length);
 				for (var q = 0; q < subModelValue.length; q++) {
 					var updateObj = false || updateAll;
 					if (isDefaultI18nCreated) {
 						var langId = ConfigEngine.getEntityColumnValue(subModelValue[q], "LANG_ID");
-						logDebug("langId: " + langId);
+//						logDebug("langId: " + langId);
 						if (ConfigEngine.getI18nLanguage() == langId) {
 							updateObj = true;
 						}
 					} else if (ConfigEngine.isPolicyModel(subModelValue[q])) {
+//						logDebug("isPolicyModel");
 						subModelValue[q] = this.fillPolicyModel(subModelValue[q], entityObj)
 					}
 
 					if (!isGenerator) {
+//						logDebug("!isGenerator");
 						subModelValue[q] = ConfigEngine.mergeObjects(subModelValueCloned[q], subModelValue[q])
 					}
 					//pm(subModelValue[q])
 					this.createEntityCascade(subModelValue[q], childSubModelsMap, updateObj, isGenerator);
 				}
 			} else {
-				logDebug('returnType IS NOT ARRAY');
+//				logDebug('returnType IS NOT ARRAY');
 				var updateObj = false || updateAll;
 				if (isDefaultI18nCreated) {
 					var langId = ConfigEngine.getEntityColumnValue(subModelValue, "LANG_ID");
@@ -710,6 +776,163 @@ ConfigEngine.prototype.createEntityCascade = function (entityObj, subModelsMap, 
 				}
 
 				this.createEntityCascade(subModelValue, childSubModelsMap, updateObj, isGenerator);
+			}
+		}
+	}
+	
+//	logDebug("After Loop............................");
+}
+
+////////////////////////////////////////BATCH////////////////////////////////////////////////////
+ConfigEngine.prototype.createEntityCascadeBatch = function (entityObjArr, subModelsMap, updateObj, isGenerator) {
+	logDebug('createEntityCascadeBatch...................');
+	logDebug('createEntityCascadeBatch:entityObjArr.length: ' + entityObjArr.length);
+	logDebug('createEntityCascadeBatch:Class: ' + entityObjArr[0].getClass());
+	if (!subModelsMap) {
+		subModelsMap = {};
+	}
+
+	var annotationsObj = com.accela.orm.util.AnnotationConfigurationUtil.getClassAnnotation(entityObjArr[0].getClass());
+	var subModels = annotationsObj.getSubModelProperties().toArray();
+	// Main entityObj will be updated after this.genDao.create/this.genDao.update
+	// clone to use for not isGenerator subModels
+	var entityObj = entityObjArr[0];
+	var entityObjBeforeUpdate = com.accela.io.CloneUtil.deepClone(entityObj);
+	var updateAll = (entityObj.getClass() == "class " + this.className) && updateObj;
+
+	
+	
+	if (!updateObj) {
+		try{
+			var createdItemsCount = this.genDao.batchCreate(java.util.Arrays.asList(entityObjArr));
+			logDebug("createdItemsCount:: " + createdItemsCount);
+		}catch(e){
+			var error = "";
+			if (e.getMessage) {
+				error = e.getMessage()
+			} else {
+				error = e + "";
+			}
+
+			logDebug('error: ' + error);
+			if (error.indexOf("Duplicated object") != -1 || error.indexOf("Cannot insert duplicate key") != -1 ) {
+				logDebug("Duplicated object Going to update instead on insert");
+			} else {
+				logDebug('createEntityCascadeBatch : Error While call DAO.batchCreate: ' + e);
+				logDebug('createEntityCascadeBatch : entityObj: ' + entityObj);
+				throw e;
+			}
+		}
+		
+	} else {
+		for(var e in entityObjArr){
+//			logDebug("entityObj to be update..........: " + JSON.stringify(stringifyJSType(entityObjArr[e])));
+			this.genDao.update(entityObjArr[e]);
+			updateCount++;
+		}
+	}
+
+	for(var e in entityObjArr){
+		var annotationsObj = com.accela.orm.util.AnnotationConfigurationUtil.getClassAnnotation(entityObjArr[e].getClass());
+		var subModels = annotationsObj.getSubModelProperties().toArray();
+		logDebug("subModels.length: " + subModels.length);
+		
+		for (var i = 0; i < subModels.length; i++) {
+			if (subModelsMap.hasOwnProperty(subModels[i].getName())) {
+//				logDebug("subModels[i].getName(): " + subModels[i].getName());
+				var returnType = ConfigEngine.getReturnType(subModels[i].getGetterMethod());
+//				logDebug("returnType: " + returnType);
+	
+				var childSubModelsMap = subModelsMap[subModels[i].getName()];
+	
+				var isGenerator = childSubModelsMap.hasOwnProperty("ISGENERATOR") ? childSubModelsMap["ISGENERATOR"] : true;
+//				logDebug("isGenerator: " + isGenerator);
+	
+				var subModelValueCloned = subModels[i].getGetterMethod().invoke(entityObjBeforeUpdate, []);
+//				logDebug("subModelValueCloned: " + subModelValueCloned);
+				
+				var subModelValue = subModels[i].getGetterMethod().invoke(entityObjArr[e], []);
+//				logDebug("subModelValue: " + subModelValue);
+	
+				
+				// If there's no value for the sub model, nothing to create
+				if (subModelValue == null) {
+//					logDebug("subModelValue == null");
+					continue;
+				}
+	
+				var isDefaultI18nCreated = false;
+				// look for auto created sub model using the default system language
+				// We need to detect this case and update the model instead of creating it again to avoid duplicates
+				if (childSubModelsMap.hasOwnProperty("ISLANG") && childSubModelsMap["ISLANG"]) {
+					try{
+						isDefaultI18nCreated = this.isDefaultI18nCreated(entityObjArr[e]);
+					}catch(e){
+						logDebug('isDefaultI18nCreated ERROR: ' + e);
+					}
+				}
+	
+				if (returnType["ISARRAY"]) {
+//					logDebug('returnType IS ARRAY');
+					
+					var subModelJsonArr = [];
+
+					subModelValue = subModelValue.toArray();
+					subModelValueCloned = subModelValueCloned.toArray();
+
+					var updateObj = false || updateAll;
+					for (var q = 0; q < subModelValue.length; q++) {
+						if (isDefaultI18nCreated) {
+							var langId = ConfigEngine.getEntityColumnValue(subModelValue[q], "LANG_ID");
+//							logDebug('langId: ' + langId);
+							if (ConfigEngine.getI18nLanguage() == langId) {
+								updateObj = true;
+							}
+						} else if (ConfigEngine.isPolicyModel(subModelValue[q])) {
+//							logDebug('isPolicyModel');
+							subModelValue[q] = this.fillPolicyModel(subModelValue[q], entityObj)
+						}
+
+						if (!isGenerator) {
+//							logDebug('!isGenerator');
+							subModelValue[q] = ConfigEngine.mergeObjects(subModelValueCloned[q], subModelValue[q])
+						}
+					}
+					
+//					logDebug("entityObjs to be create..........: " + JSON.stringify(stringifyJSType(subModelValue)));
+					
+					try{
+						this.createEntityCascadeBatch(subModelValue, childSubModelsMap, updateObj, isGenerator);
+					}catch(e){
+						logDebug("Error Calling nested createEntityCascadeBatch: " + e);
+					}
+					
+					
+//					if(subModelValue.size() > 0){
+//						subModelValue = subModelValue.toArray();
+//						try{
+//							this.createEntityCascadeBatch(subModelValue, childSubModelsMap, updateObj, isGenerator);
+//						}catch(e){
+//							logDebug("Error Calling nested createEntityCascadeBatch: " + e);
+//						}
+//					}
+				} else {
+//					logDebug('returnType IS NOT ARRAY');
+					var updateObj = false || updateAll;
+					if (isDefaultI18nCreated) {
+						var langId = ConfigEngine.getEntityColumnValue(subModelValue, "LANG_ID");
+						if (ConfigEngine.getI18nLanguage() == langId) {
+							updateObj = false || updateAll;
+						}
+					} else if (ConfigEngine.isPolicyModel(subModelValue)) {
+						subModelValue = this.fillPolicyModel(subModelValue, entityObj);
+					}
+					if (!isGenerator) {
+						subModelValue = ConfigEngine.mergeObjects(subModelValueCloned, subModelValue);
+					}
+	
+					this.createEntityCascade(subModelValue, childSubModelsMap, updateObj, isGenerator);
+				}
 			}
 		}
 	}
@@ -851,7 +1074,9 @@ ConfigEngine.jsonToEntityClassCascade = function (jsonObj, classPath, subModelsM
 }
 
 ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, specificFields, active) {
-	
+	if(jsonObj == null || jsonObj == undefined){
+		jsonObj = {};
+	}
 	var isActive = jsonObj["ISACTIVE"];
 	
 	if(isActive != null && isActive != undefined){
@@ -866,7 +1091,7 @@ ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, sp
 		}
 	}
 	
-	logDebug("active: " + active);
+//	logDebug("active: " + active);
 	
 	var obj = ConfigEngine.getInstance(classPath);
 
@@ -882,12 +1107,12 @@ ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, sp
 
 	if (addAuditModel) {
 		// TODO: Convert it to use embedded models
-		logDebug("adding AuditModel.....................");
+//		logDebug("adding AuditModel.....................");
 		if (annotationsObj.getPropertyList().containsKey("auditModel")) {
-			logDebug('contains AuditModel');
+//			logDebug('contains AuditModel');
 			obj.setAuditModel(new com.accela.orm.model.common.AuditModel(new Date(), aa.getAuditID(), active));
 		} else {
-			logDebug('NOT contains AuditModel');
+//			logDebug('NOT contains AuditModel');
 			// Some entities don't have an audit model, instead they have its
 			// content directly on the object itself
 			if (!annotationsObj.getColumnMap().containsKey("REC_DATE")
@@ -906,25 +1131,25 @@ ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, sp
 	
 	var numberOfMappedParameters = 0;
 	var columnsArr = annotationsObj.getColumnMap().keySet().toArray();
-	logDebug('columnsArr.length: ' +  columnsArr.length);
-	logDebug('jsonObj:: \n' + JSON.stringify(stringifyJSType(jsonObj)));
+//	logDebug('columnsArr.length: ' +  columnsArr.length);
+//	logDebug('jsonObj:: \n' + JSON.stringify(stringifyJSType(jsonObj)));
 	
 	for (var i = 0; i < columnsArr.length; i++) {
 //		aa.print('columnsArr[i]: ' + columnsArr[i]);
 		// if specificFields is provided then only the fields within this entity
 		// are added to the object
 		if (jsonObj.hasOwnProperty(columnsArr[i]) && (!specificFields || specificFields.hasOwnProperty(columnsArr[i]))) {
-			logDebug('FOUND.......................: ' + columnsArr[i]);
+//			logDebug('FOUND.......................: ' + columnsArr[i]);
 			
 			var value = jsonObj[columnsArr[i]];
-			logDebug('value: ' + value);
+//			logDebug('value: ' + value);
 			
 			var setterMethod = annotationsObj.getColumnMap().get(columnsArr[i]).getSetterMethod();
-			logDebug('setterMethod: ' + setterMethod);
+//			logDebug('setterMethod: ' + setterMethod);
 			
 			var parameters = setterMethod.getGenericParameterTypes();
 			if (parameters.length != 1) {
-				logDebug("Method name: " + setterMethod.getName() + " has " + parameters.length + ". Setter methods should have 1 parameter only.")
+				logDebugug("Method name: " + setterMethod.getName() + " has " + parameters.length + ". Setter methods should have 1 parameter only.")
 				continue;
 			}
 
@@ -932,13 +1157,31 @@ ConfigEngine.jsonToEntityClass = function (jsonObj, classPath, addAuditModel, sp
 			// JSON values are text, set proper data type
 			value = ConfigEngine.parseJavaClassValue(parameters[0], value);
 			
-			setterMethod.invoke(obj, [value]);
+			try{
+				setterMethod.invoke(obj, [value]);
+			}catch(e){
+				var error = "";
+				if (e.getMessage) {
+					error = e.getMessage()
+				} else {
+					error = e + "";
+				}
+
+				logDebug('error: ' + error);
+				if (error.indexOf("ClassCastException") != -1){
+					try{
+						setterMethod.invoke(obj, [java.lang.String(value)]);
+					}catch(e){
+						logDebug('error##: ' + e);
+					}
+				}
+			}
 			numberOfMappedParameters++;
 		}
 	}
 
 	if (numberOfMappedParameters == 0) {
-		throw "Attempting to convert JSON obj into class: " + classPath + " has had 0 parameter set, aborting."
+		throw "Attempting to convert JSON obj into class: " + classPath + " has had 0 parameter set, aborting. "
 	}
 
 	return obj;
